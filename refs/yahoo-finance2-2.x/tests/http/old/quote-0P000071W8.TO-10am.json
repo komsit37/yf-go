@@ -1,0 +1,125 @@
+{
+  "request": {
+    "url": "https://query2.finance.yahoo.com/v7/finance/quote?symbols=0P000071W8.TO"
+  },
+  "response": {
+    "ok": true,
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": [
+        "application/json"
+      ],
+      "cache-control": [
+        "public, max-age=1, stale-while-revalidate=9"
+      ],
+      "vary": [
+        "Origin,Accept-Encoding"
+      ],
+      "y-rid": [
+        "d4hurv5g2n8co"
+      ],
+      "x-yahoo-request-id": [
+        "d4hurv5g2n8co"
+      ],
+      "x-request-id": [
+        "17471beb-3466-4ff7-bffa-1275d43a815a"
+      ],
+      "content-encoding": [
+        "gzip"
+      ],
+      "content-length": [
+        "673"
+      ],
+      "x-envoy-upstream-service-time": [
+        "2"
+      ],
+      "date": [
+        "Tue, 16 Feb 2021 10:42:32 GMT"
+      ],
+      "server": [
+        "ATS"
+      ],
+      "x-envoy-decorator-operation": [
+        "finance-quote-api--mtls-production-ir2.finance-k8s.svc.yahoo.local:4080/*"
+      ],
+      "age": [
+        "0"
+      ],
+      "strict-transport-security": [
+        "max-age=15552000"
+      ],
+      "referrer-policy": [
+        "no-referrer-when-downgrade"
+      ],
+      "x-frame-options": [
+        "SAMEORIGIN"
+      ],
+      "connection": [
+        "close"
+      ],
+      "expect-ct": [
+        "max-age=31536000, report-uri=\"http://csp.yahoo.com/beacon/csp?src=yahoocom-expect-ct-report-only\""
+      ],
+      "x-xss-protection": [
+        "1; mode=block"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ]
+    },
+    "bodyJson": {
+      "quoteResponse": {
+        "result": [
+          {
+            "language": "en-US",
+            "region": "US",
+            "quoteType": "MUTUALFUND",
+            "quoteSourceName": "Delayed Quote",
+            "triggerable": true,
+            "currency": "CAD",
+            "exchange": "TOR",
+            "shortName": "TD Indiciel américain - e (C$)",
+            "longName": "TD U.S. Index Fund - e",
+            "regularMarketChange": 0.62999725,
+            "regularMarketChangePercent": 0.70818037,
+            "regularMarketTime": 1613160000,
+            "regularMarketPrice": 89.59,
+            "regularMarketPreviousClose": 88.96,
+            "fullExchangeName": "Toronto",
+            "averageDailyVolume3Month": 0,
+            "averageDailyVolume10Day": 0,
+            "fiftyTwoWeekLowChange": 32.409996,
+            "fiftyTwoWeekLowChangePercent": 0.5668065,
+            "fiftyTwoWeekRange": "57.18 - 89.59",
+            "fiftyTwoWeekHighChange": 0,
+            "fiftyTwoWeekHighChangePercent": 0,
+            "fiftyTwoWeekLow": 57.18,
+            "fiftyTwoWeekHigh": 89.59,
+            "ytdReturn": 18.12,
+            "trailingThreeMonthReturns": 7.59,
+            "fiftyDayAverage": 86.63087,
+            "fiftyDayAverageChange": 2.9591293,
+            "fiftyDayAverageChangePercent": 0.03415791,
+            "twoHundredDayAverage": 82.58981,
+            "twoHundredDayAverageChange": 7.000183,
+            "twoHundredDayAverageChangePercent": 0.08475843,
+            "sourceInterval": 15,
+            "exchangeDataDelayedBy": 15,
+            "firstTradeDateMilliseconds": 1344519000000,
+            "priceHint": 2,
+            "marketState": "PREPRE",
+            "exchangeTimezoneName": "America/Toronto",
+            "exchangeTimezoneShortName": "EST",
+            "gmtOffSetMilliseconds": -18000000,
+            "market": "ca_market",
+            "esgPopulated": false,
+            "tradeable": false,
+            "symbol": "0P000071W8.TO"
+          }
+        ],
+        "error": null
+      }
+    }
+  }
+}

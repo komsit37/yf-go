@@ -1,0 +1,28 @@
+# Binaries
+/yf
+/bin/
+/dist/
+/build/
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE/editor
+.vscode/
+.idea/
+*.iml
+*.swp
+*~
+
+# Dependency / Modules cache
+vendor/
+
+# Logs
+*.log
+

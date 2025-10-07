@@ -1,0 +1,149 @@
+{
+  "request": {
+    "url": "https://query2.finance.yahoo.com/v7/finance/quote?symbols=GOOG"
+  },
+  "response": {
+    "ok": true,
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": [
+        "application/json"
+      ],
+      "cache-control": [
+        "public, max-age=1, stale-while-revalidate=9"
+      ],
+      "vary": [
+        "Origin,Accept-Encoding"
+      ],
+      "y-rid": [
+        "4og8r3pg2n8cl"
+      ],
+      "x-yahoo-request-id": [
+        "4og8r3pg2n8cl"
+      ],
+      "x-request-id": [
+        "8b311bd8-a3ee-4327-b707-60504fb0149d"
+      ],
+      "content-encoding": [
+        "gzip"
+      ],
+      "content-length": [
+        "943"
+      ],
+      "x-envoy-upstream-service-time": [
+        "2"
+      ],
+      "date": [
+        "Tue, 16 Feb 2021 10:42:29 GMT"
+      ],
+      "server": [
+        "ATS"
+      ],
+      "x-envoy-decorator-operation": [
+        "finance-quote-api--mtls-production-ir2.finance-k8s.svc.yahoo.local:4080/*"
+      ],
+      "age": [
+        "0"
+      ],
+      "strict-transport-security": [
+        "max-age=15552000"
+      ],
+      "referrer-policy": [
+        "no-referrer-when-downgrade"
+      ],
+      "x-frame-options": [
+        "SAMEORIGIN"
+      ],
+      "connection": [
+        "close"
+      ],
+      "expect-ct": [
+        "max-age=31536000, report-uri=\"http://csp.yahoo.com/beacon/csp?src=yahoocom-expect-ct-report-only\""
+      ],
+      "x-xss-protection": [
+        "1; mode=block"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ]
+    },
+    "bodyJson": {
+      "quoteResponse": {
+        "result": [
+          {
+            "language": "en-US",
+            "region": "US",
+            "quoteType": "EQUITY",
+            "quoteSourceName": "Nasdaq Real Time Price",
+            "triggerable": true,
+            "currency": "USD",
+            "tradeable": false,
+            "marketState": "PRE",
+            "exchange": "NMS",
+            "shortName": "Alphabet Inc.",
+            "longName": "Alphabet Inc.",
+            "messageBoardId": "finmb_29096",
+            "exchangeTimezoneName": "America/New_York",
+            "exchangeTimezoneShortName": "EST",
+            "gmtOffSetMilliseconds": -18000000,
+            "market": "us_market",
+            "esgPopulated": false,
+            "regularMarketChange": 8.220215,
+            "regularMarketChangePercent": 0.39220643,
+            "regularMarketTime": 1613163603,
+            "regularMarketPrice": 2104.11,
+            "regularMarketDayHigh": 2108.82,
+            "regularMarketDayRange": "2083.13 - 2108.82",
+            "regularMarketDayLow": 2083.13,
+            "regularMarketVolume": 855865,
+            "regularMarketPreviousClose": 2095.89,
+            "bid": 2111.64,
+            "ask": 2121.46,
+            "bidSize": 9,
+            "askSize": 12,
+            "fullExchangeName": "NasdaqGS",
+            "financialCurrency": "USD",
+            "regularMarketOpen": 2090.25,
+            "averageDailyVolume3Month": 1567647,
+            "averageDailyVolume10Day": 1013740,
+            "fiftyTwoWeekLowChange": 1090.5741,
+            "fiftyTwoWeekLowChangePercent": 1.0760093,
+            "fiftyTwoWeekRange": "1013.536 - 2123.547",
+            "fiftyTwoWeekHighChange": -19.437012,
+            "fiftyTwoWeekHighChangePercent": -0.009153087,
+            "fiftyTwoWeekLow": 1013.536,
+            "fiftyTwoWeekHigh": 2123.547,
+            "trailingPE": 35.898354,
+            "epsTrailingTwelveMonths": 58.613,
+            "epsForward": 80.82,
+            "epsCurrentYear": 69.81,
+            "priceEpsCurrentYear": 30.140528,
+            "sharesOutstanding": 329867008,
+            "bookValue": 329.586,
+            "fiftyDayAverage": 1876.2606,
+            "fiftyDayAverageChange": 227.84949,
+            "fiftyDayAverageChangePercent": 0.12143808,
+            "twoHundredDayAverage": 1681.7289,
+            "twoHundredDayAverageChange": 422.38123,
+            "twoHundredDayAverageChangePercent": 0.25115892,
+            "marketCap": 1415310737408,
+            "forwardPE": 26.034523,
+            "priceToBook": 6.3841004,
+            "sourceInterval": 15,
+            "exchangeDataDelayedBy": 0,
+            "firstTradeDateMilliseconds": 1092922200000,
+            "priceHint": 2,
+            "preMarketChange": 13.059814,
+            "preMarketChangePercent": 0.6206811,
+            "preMarketTime": 1613470585,
+            "preMarketPrice": 2117.17,
+            "displayName": "Alphabet",
+            "symbol": "GOOG"
+          }
+        ],
+        "error": null
+      }
+    }
+  }
+}

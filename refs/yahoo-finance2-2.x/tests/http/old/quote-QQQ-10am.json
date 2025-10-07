@@ -1,0 +1,149 @@
+{
+  "request": {
+    "url": "https://query2.finance.yahoo.com/v7/finance/quote?symbols=QQQ"
+  },
+  "response": {
+    "ok": true,
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": [
+        "application/json"
+      ],
+      "cache-control": [
+        "public, max-age=1, stale-while-revalidate=9"
+      ],
+      "vary": [
+        "Origin,Accept-Encoding"
+      ],
+      "y-rid": [
+        "an15kn1g2n8cn"
+      ],
+      "x-yahoo-request-id": [
+        "an15kn1g2n8cn"
+      ],
+      "x-request-id": [
+        "dc834dc6-b52d-449e-9d61-b31bdb4b49b5"
+      ],
+      "content-encoding": [
+        "gzip"
+      ],
+      "content-length": [
+        "948"
+      ],
+      "x-envoy-upstream-service-time": [
+        "3"
+      ],
+      "date": [
+        "Tue, 16 Feb 2021 10:42:31 GMT"
+      ],
+      "server": [
+        "ATS"
+      ],
+      "x-envoy-decorator-operation": [
+        "finance-quote-api--mtls-production-ir2.finance-k8s.svc.yahoo.local:4080/*"
+      ],
+      "age": [
+        "0"
+      ],
+      "strict-transport-security": [
+        "max-age=15552000"
+      ],
+      "referrer-policy": [
+        "no-referrer-when-downgrade"
+      ],
+      "x-frame-options": [
+        "SAMEORIGIN"
+      ],
+      "connection": [
+        "close"
+      ],
+      "expect-ct": [
+        "max-age=31536000, report-uri=\"http://csp.yahoo.com/beacon/csp?src=yahoocom-expect-ct-report-only\""
+      ],
+      "x-xss-protection": [
+        "1; mode=block"
+      ],
+      "x-content-type-options": [
+        "nosniff"
+      ]
+    },
+    "bodyJson": {
+      "quoteResponse": {
+        "result": [
+          {
+            "language": "en-US",
+            "region": "US",
+            "quoteType": "ETF",
+            "quoteSourceName": "Nasdaq Real Time Price",
+            "triggerable": true,
+            "currency": "USD",
+            "exchange": "NMS",
+            "shortName": "Invesco QQQ Trust, Series 1",
+            "longName": "Invesco QQQ Trust",
+            "preMarketChange": 1.5499878,
+            "preMarketChangePercent": 0.4606889,
+            "preMarketTime": 1613472056,
+            "preMarketPrice": 338,
+            "regularMarketChange": 1.8700256,
+            "regularMarketChangePercent": 0.55891734,
+            "regularMarketTime": 1613163602,
+            "regularMarketPrice": 336.45,
+            "regularMarketDayHigh": 336.62,
+            "regularMarketDayRange": "332.63 - 336.62",
+            "regularMarketDayLow": 332.63,
+            "regularMarketVolume": 20346819,
+            "regularMarketPreviousClose": 334.58,
+            "bid": 337.86,
+            "ask": 0,
+            "bidSize": 10,
+            "askSize": 22,
+            "fullExchangeName": "NasdaqGS",
+            "financialCurrency": "USD",
+            "regularMarketOpen": 333.71,
+            "averageDailyVolume3Month": 28225942,
+            "averageDailyVolume10Day": 21704380,
+            "fiftyTwoWeekLowChange": 171.52002,
+            "fiftyTwoWeekLowChangePercent": 1.0399565,
+            "fiftyTwoWeekRange": "164.93 - 336.62",
+            "fiftyTwoWeekHighChange": -0.16998291,
+            "fiftyTwoWeekHighChangePercent": -0.00050496974,
+            "fiftyTwoWeekLow": 164.93,
+            "fiftyTwoWeekHigh": 336.62,
+            "trailingAnnualDividendRate": 1.54,
+            "trailingPE": 86.379974,
+            "trailingAnnualDividendYield": 0.0046027857,
+            "ytdReturn": 0.31,
+            "trailingThreeMonthReturns": 16.98,
+            "trailingThreeMonthNavReturns": 17.08,
+            "epsTrailingTwelveMonths": 3.895,
+            "sharesOutstanding": 393100000,
+            "bookValue": 188.775,
+            "fiftyDayAverage": 321.1691,
+            "fiftyDayAverageChange": 15.280914,
+            "fiftyDayAverageChangePercent": 0.04757903,
+            "twoHundredDayAverage": 294.43515,
+            "twoHundredDayAverageChange": 42.014862,
+            "twoHundredDayAverageChangePercent": 0.14269648,
+            "marketCap": 132258496512,
+            "priceToBook": 1.7822806,
+            "sourceInterval": 15,
+            "exchangeDataDelayedBy": 0,
+            "firstTradeDateMilliseconds": 921076200000,
+            "priceHint": 2,
+            "marketState": "PRE",
+            "messageBoardId": "finmb_8108558",
+            "exchangeTimezoneName": "America/New_York",
+            "exchangeTimezoneShortName": "EST",
+            "gmtOffSetMilliseconds": -18000000,
+            "market": "us_market",
+            "esgPopulated": false,
+            "tradeable": false,
+            "symbol": "QQQ"
+          }
+        ],
+        "error": null
+      }
+    }
+  }
+}

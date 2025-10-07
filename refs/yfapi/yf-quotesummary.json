@@ -1,0 +1,351 @@
+{
+  "financialData": {
+    "currentPrice": {
+      "fmt": "2,871.00",
+      "raw": 2871
+    },
+    "currentRatio": {
+      "fmt": "1.50",
+      "raw": 1.505
+    },
+    "debtToEquity": {
+      "fmt": "65.84%",
+      "raw": 65.838
+    },
+    "earningsGrowth": {
+      "fmt": "2.00%",
+      "raw": 0.02
+    },
+    "ebitda": {
+      "fmt": "2.45B",
+      "longFmt": "2,454,749,952",
+      "raw": 2454749952
+    },
+    "ebitdaMargins": {
+      "fmt": "4.85%",
+      "raw": 0.04848
+    },
+    "financialCurrency": "JPY",
+    "freeCashflow": {},
+    "grossMargins": {
+      "fmt": "11.73%",
+      "raw": 0.11731
+    },
+    "grossProfits": {
+      "fmt": "5.94B",
+      "longFmt": "5,939,999,744",
+      "raw": 5939999744
+    },
+    "maxAge": 86400,
+    "numberOfAnalystOpinions": {},
+    "operatingCashflow": {},
+    "operatingMargins": {
+      "fmt": "3.24%",
+      "raw": 0.03241
+    },
+    "profitMargins": {
+      "fmt": "2.26%",
+      "raw": 0.022550002
+    },
+    "quickRatio": {
+      "fmt": "1.17",
+      "raw": 1.169
+    },
+    "recommendationKey": "none",
+    "recommendationMean": {},
+    "returnOnAssets": {
+      "fmt": "3.16%",
+      "raw": 0.031570002
+    },
+    "returnOnEquity": {
+      "fmt": "8.00%",
+      "raw": 0.079959996
+    },
+    "revenueGrowth": {
+      "fmt": "20.00%",
+      "raw": 0.2
+    },
+    "revenuePerShare": {
+      "fmt": "13,462.01",
+      "raw": 13462.009
+    },
+    "targetHighPrice": {},
+    "targetLowPrice": {},
+    "targetMeanPrice": {},
+    "targetMedianPrice": {},
+    "totalCash": {
+      "fmt": "6.81B",
+      "longFmt": "6,812,000,256",
+      "raw": 6812000256
+    },
+    "totalCashPerShare": {
+      "fmt": "1,810.87",
+      "raw": 1810.87
+    },
+    "totalDebt": {
+      "fmt": "9.83B",
+      "longFmt": "9,831,000,064",
+      "raw": 9831000064
+    },
+    "totalRevenue": {
+      "fmt": "50.63B",
+      "longFmt": "50,632,998,912",
+      "raw": 50632998912
+    }
+  },
+  "price": {
+    "averageDailyVolume10Day": {
+      "fmt": "3.53k",
+      "longFmt": "3,530",
+      "raw": 3530
+    },
+    "averageDailyVolume3Month": {
+      "fmt": "10.14k",
+      "longFmt": "10,136",
+      "raw": 10136
+    },
+    "circulatingSupply": {},
+    "currency": "JPY",
+    "currencySymbol": "￥",
+    "exchange": "JPX",
+    "exchangeDataDelayedBy": 20,
+    "exchangeName": "Tokyo",
+    "fromCurrency": null,
+    "lastMarket": null,
+    "longName": "Medical Ikkou Group Co.,Ltd.",
+    "marketCap": {
+      "fmt": "10.80B",
+      "longFmt": "10,799,918,080.00",
+      "raw": 10799918080
+    },
+    "marketState": "REGULAR",
+    "maxAge": 1,
+    "openInterest": {},
+    "postMarketChange": {},
+    "postMarketPrice": {},
+    "preMarketChange": {},
+    "preMarketPrice": {},
+    "priceHint": {
+      "fmt": "2",
+      "longFmt": "2",
+      "raw": 2
+    },
+    "quoteSourceName": "Delayed Quote",
+    "quoteType": "EQUITY",
+    "regularMarketChange": {
+      "fmt": "-239.00",
+      "raw": -239
+    },
+    "regularMarketChangePercent": {
+      "fmt": "-7.69%",
+      "raw": -0.07687359
+    },
+    "regularMarketDayHigh": {
+      "fmt": "2,973.00",
+      "raw": 2973
+    },
+    "regularMarketDayLow": {
+      "fmt": "2,854.00",
+      "raw": 2854
+    },
+    "regularMarketOpen": {
+      "fmt": "2,973.00",
+      "raw": 2973
+    },
+    "regularMarketPreviousClose": {
+      "fmt": "3,110.00",
+      "raw": 3110
+    },
+    "regularMarketPrice": {
+      "fmt": "2,871.00",
+      "raw": 2871
+    },
+    "regularMarketSource": "DELAYED",
+    "regularMarketTime": 1759816448,
+    "regularMarketVolume": {
+      "fmt": "32.30k",
+      "longFmt": "32,300.00",
+      "raw": 32300
+    },
+    "shortName": "MEDICAL IKKOU GP CO LTD",
+    "strikePrice": {},
+    "symbol": "3353.T",
+    "toCurrency": null,
+    "underlyingSymbol": null,
+    "volume24Hr": {},
+    "volumeAllCurrencies": {}
+  },
+  "summaryDetail": {
+    "algorithm": null,
+    "allTimeHigh": {
+      "fmt": "9,900.00",
+      "raw": 9900
+    },
+    "allTimeLow": {
+      "fmt": "828.50",
+      "raw": 828.5
+    },
+    "ask": {
+      "fmt": "2,871.00",
+      "raw": 2871
+    },
+    "askSize": {
+      "fmt": null,
+      "longFmt": "0",
+      "raw": 0
+    },
+    "averageDailyVolume10Day": {
+      "fmt": "3.53k",
+      "longFmt": "3,530",
+      "raw": 3530
+    },
+    "averageVolume": {
+      "fmt": "10.14k",
+      "longFmt": "10,136",
+      "raw": 10136
+    },
+    "averageVolume10days": {
+      "fmt": "3.53k",
+      "longFmt": "3,530",
+      "raw": 3530
+    },
+    "beta": {
+      "fmt": "0.15",
+      "raw": 0.151
+    },
+    "bid": {
+      "fmt": "2,869.00",
+      "raw": 2869
+    },
+    "bidSize": {
+      "fmt": null,
+      "longFmt": "0",
+      "raw": 0
+    },
+    "circulatingSupply": {},
+    "coinMarketCapLink": null,
+    "currency": "JPY",
+    "dayHigh": {
+      "fmt": "2,973.00",
+      "raw": 2973
+    },
+    "dayLow": {
+      "fmt": "2,854.00",
+      "raw": 2854
+    },
+    "dividendRate": {
+      "fmt": "120.00",
+      "raw": 120
+    },
+    "dividendYield": {
+      "fmt": "3.86%",
+      "raw": 0.038599998
+    },
+    "exDividendDate": {
+      "fmt": "2026-02-26",
+      "raw": 1772064000
+    },
+    "expireDate": {},
+    "fiftyDayAverage": {
+      "fmt": "3,127.08",
+      "raw": 3127.08
+    },
+    "fiftyTwoWeekHigh": {
+      "fmt": "4,410.00",
+      "raw": 4410
+    },
+    "fiftyTwoWeekLow": {
+      "fmt": "1,900.00",
+      "raw": 1900
+    },
+    "fiveYearAvgDividendYield": {
+      "fmt": "1.79",
+      "raw": 1.79
+    },
+    "forwardPE": {},
+    "fromCurrency": null,
+    "lastMarket": null,
+    "marketCap": {
+      "fmt": "10.8B",
+      "longFmt": "10,799,918,080",
+      "raw": 10799918080
+    },
+    "maxAge": 1,
+    "maxSupply": {},
+    "navPrice": {},
+    "open": {
+      "fmt": "2,973.00",
+      "raw": 2973
+    },
+    "openInterest": {},
+    "payoutRatio": {
+      "fmt": "19.91%",
+      "raw": 0.1991
+    },
+    "previousClose": {
+      "fmt": "3,110.00",
+      "raw": 3110
+    },
+    "priceHint": {
+      "fmt": "2",
+      "longFmt": "2",
+      "raw": 2
+    },
+    "priceToSalesTrailing12Months": {
+      "fmt": "0.21",
+      "raw": 0.21329801
+    },
+    "qtdReturn": {},
+    "regularMarketDayHigh": {
+      "fmt": "2,973.00",
+      "raw": 2973
+    },
+    "regularMarketDayLow": {
+      "fmt": "2,854.00",
+      "raw": 2854
+    },
+    "regularMarketOpen": {
+      "fmt": "2,973.00",
+      "raw": 2973
+    },
+    "regularMarketPreviousClose": {
+      "fmt": "3,110.00",
+      "raw": 3110
+    },
+    "regularMarketVolume": {
+      "fmt": "32.3k",
+      "longFmt": "32,300",
+      "raw": 32300
+    },
+    "startDate": {},
+    "strikePrice": {},
+    "toCurrency": null,
+    "totalAssets": {},
+    "tradeable": false,
+    "trailingAnnualDividendRate": {
+      "fmt": "60.00",
+      "raw": 60
+    },
+    "trailingAnnualDividendYield": {
+      "fmt": "1.93%",
+      "raw": 0.019292604
+    },
+    "trailingPE": {
+      "fmt": "9.53",
+      "raw": 9.526813
+    },
+    "twoHundredDayAverage": {
+      "fmt": "2,542.68",
+      "raw": 2542.675
+    },
+    "volume": {
+      "fmt": "32.3k",
+      "longFmt": "32,300",
+      "raw": 32300
+    },
+    "volume24Hr": {},
+    "volumeAllCurrencies": {},
+    "yield": {},
+    "ytdReturn": {}
+  }
+}

@@ -2,6 +2,7 @@ package yfapi
 
 import (
     "context"
+    "encoding/json"
     "errors"
     "fmt"
     "io"
@@ -18,6 +19,19 @@ type Client struct {
     crumb string
 }
 
+// API defines the minimal interface exposed by this package for clients.
+// It enables easy dependency injection and testing.
+//
+// Implementations should be safe for concurrent use.
+type API interface {
+    // QuoteSummary fetches Yahoo Finance quoteSummary for a symbol with selected modules.
+    // It returns the first object of quoteSummary.result as an untyped value.
+    QuoteSummary(ctx context.Context, symbol string, modules []string) (any, error)
+
+    // QuoteSummaryTyped is a convenience that maps a subset of modules into a typed struct.
+    QuoteSummaryTyped(ctx context.Context, symbol string, modules []string) (QuoteSummaryTyped, error)
+}
+
 // NewClient creates a Yahoo Finance client with cookie jar and timeout.
 func NewClient() *Client {
     jar, _ := cookiejar.New(nil)
@@ -31,6 +45,25 @@ func NewClient() *Client {
 
 // Default is a package-level default client.
 var Default = NewClient()
+
+// DefaultAPI exposes the default implementation via the API interface.
+var DefaultAPI API = Default
+
+// quoteSummaryEnvelope mirrors the top-level structure returned by the
+// Yahoo Finance quoteSummary endpoint.
+type quoteSummaryEnvelope struct {
+    QuoteSummary struct {
+        Result []any `json:"result"`
+        Error  any   `json:"error"`
+    } `json:"quoteSummary"`
+}
+
+// Provide a local json decoder handle for internal use.
+var defaultJSON = jsonCodec{}
+
+type jsonCodec struct{}
+
+func (jsonCodec) Unmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }
 
 func (c *Client) do(ctx context.Context, method, rawURL string) (*http.Response, error) {
     req, err := http.NewRequestWithContext(ctx, method, rawURL, nil)
@@ -139,4 +172,19 @@ func (c *Client) callQuoteSummary(ctx context.Context, u string) (any, int, stri
 
 // jsonUnmarshal is a tiny wrapper to avoid importing encoding/json in two files.
 func jsonUnmarshal(b []byte, v any) error { return defaultJSON.Unmarshal(b, v) }
+
+// QuoteSummaryTyped implements API.QuoteSummaryTyped using this client instance.
+func (c *Client) QuoteSummaryTyped(ctx context.Context, symbol string, modules []string) (QuoteSummaryTyped, error) {
+    raw, err := c.QuoteSummary(ctx, symbol, modules)
+    if err != nil {
+        return QuoteSummaryTyped{}, err
+    }
+    var out QuoteSummaryTyped
+    b, _ := json.Marshal(raw)
+    _ = json.Unmarshal(b, &out)
+    return out, nil
+}
+
+// Ensure *Client satisfies API.
+var _ API = (*Client)(nil)
 

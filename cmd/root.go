@@ -20,7 +20,7 @@ func Execute() error { return rootCmd.Execute() }
 
 func init() {
     // Global flags
-    rootCmd.PersistentFlags().StringP("format", "o", "json", "Output format (json)")
+    rootCmd.PersistentFlags().StringP("format", "o", "json", "Output format (json|table)")
     rootCmd.PersistentFlags().Bool("pretty", false, "Pretty print output")
 
     // Bind to viper for future config/env usage
@@ -45,11 +45,10 @@ func init() {
     rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
         format := strings.ToLower(viper.GetString("format"))
         switch format {
-        case "json":
+        case "json", "table":
             return nil
         default:
-            return fmt.Errorf("unsupported format: %s (only 'json' supported)", format)
+            return fmt.Errorf("unsupported format: %s (allowed: json, table)", format)
         }
     }
 }
-

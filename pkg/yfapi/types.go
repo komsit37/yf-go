@@ -110,11 +110,27 @@ type FinancialDataModule struct {
 	CashPerShare YNum `json:"totalCashPerShare"`
 }
 
+// AssetProfileModule captures a subset of common fields from the assetProfile module.
+// This is intentionally lightweight; additional fields can be added as needed.
+type AssetProfileModule struct {
+    Sector               string `json:"sector"`
+    Industry             string `json:"industry"`
+    Website              string `json:"website"`
+    LongBusinessSummary  string `json:"longBusinessSummary"`
+    Address1             string `json:"address1"`
+    City                 string `json:"city"`
+    State                string `json:"state"`
+    Country              string `json:"country"`
+    FullTimeEmployees    int64  `json:"fullTimeEmployees"`
+}
+
 // QuoteSummaryTyped is a convenient typed view over the most useful modules.
 type QuoteSummaryTyped struct {
-	Price         PriceModule         `json:"price"`
-	SummaryDetail SummaryDetailModule `json:"summaryDetail"`
-	FinancialData FinancialDataModule `json:"financialData"`
+    Price         PriceModule          `json:"price"`
+    SummaryDetail SummaryDetailModule  `json:"summaryDetail"`
+    FinancialData FinancialDataModule  `json:"financialData"`
+    // Optional module
+    AssetProfile  *AssetProfileModule  `json:"assetProfile,omitempty"`
 }
 
 // FetchQuoteSummaryTyped fetches the quoteSummary and converts it into typed struct.

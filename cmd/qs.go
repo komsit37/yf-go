@@ -6,6 +6,7 @@ import (
     "fmt"
     "os"
     "sort"
+    "strconv"
     "strings"
     "time"
 
@@ -157,7 +158,7 @@ func renderSummary(w *os.File, qs yfapi.QuoteSummaryTyped) {
     ))
     fmt.Fprintln(w, fmt.Sprintf("%-12s %-10s %-10s %-10s",
         vOrDash(p.RegularMarketPrice),
-        withPercentIfMissing(vOrDash(p.RegularMarketChangePercent)),
+        colorizeChangePercent(p.RegularMarketChangePercent),
         prefer(p.RegularMarketVolume, yfapi.YNum{}),
         vOrDash(p.AverageDailyVolume3Month),
     ))
@@ -210,8 +211,8 @@ func renderSummary(w *os.File, qs yfapi.QuoteSummaryTyped) {
 
     fmt.Fprintln(w, fmt.Sprintf("%-9s %-8s", "Revenue", "Earnings"))
     fmt.Fprintln(w, fmt.Sprintf("%-9s %-8s",
-        vOrDash(f.RevenueGrowth),
-        vOrDash(f.EarningsGrowth),
+        colorizeChangePercent(f.RevenueGrowth),
+        colorizeChangePercent(f.EarningsGrowth),
     ))
     fmt.Fprintln(w, sepLine())
 
@@ -238,6 +239,78 @@ func renderSummary(w *os.File, qs yfapi.QuoteSummaryTyped) {
         vOrDash(f.CashPerShare),
     ))
 }
+
+// ---- Color helpers ----
+
+func colorizeChangePercent(n yfapi.YNum) string {
+    // Base display value
+    valStr := withPercentIfMissing(vOrDash(n))
+    if !shouldUseColor() {
+        return valStr
+    }
+    // Determine sign from raw when available; otherwise parse the string.
+    var sign float64
+    if n.Raw != nil {
+        sign = *n.Raw
+    } else {
+        // Best-effort parse: strip % and spaces
+        s := strings.TrimSpace(strings.TrimSuffix(valStr, "%"))
+        // Replace commas if any (defensive)
+        s = strings.ReplaceAll(s, ",", "")
+        // ParseFloat errors result in no color
+        if f, err := strconv.ParseFloat(s, 64); err == nil {
+            sign = f
+        } else {
+            return valStr
+        }
+    }
+    switch {
+    case sign > 0:
+        return ansiGreen(valStr)
+    case sign < 0:
+        return ansiRed(valStr)
+    default:
+        return valStr
+    }
+}
+
+func shouldUseColor() bool {
+    // Explicit flag/env via viper: YF_COLOR or --color
+    switch strings.ToLower(strings.TrimSpace(viper.GetString("color"))) {
+    case "always":
+        return true
+    case "never":
+        return false
+    }
+
+    // Conventional envs
+    if v := os.Getenv("NO_COLOR"); v != "" {
+        return false
+    }
+    if v := os.Getenv("CLICOLOR_FORCE"); v != "" && v != "0" {
+        return true
+    }
+    if v := os.Getenv("FORCE_COLOR"); v != "" && v != "0" {
+        return true
+    }
+    if v := os.Getenv("CLICOLOR"); v == "0" {
+        return false
+    }
+
+    term := strings.ToLower(strings.TrimSpace(os.Getenv("TERM")))
+    if term == "" || term == "dumb" {
+        return false
+    }
+    // Only colorize when writing to a TTY
+    fi, err := os.Stdout.Stat()
+    if err != nil {
+        return false
+    }
+    return (fi.Mode() & os.ModeCharDevice) != 0
+}
+
+func ansiGreen(s string) string { return "\x1b[32m" + s + "\x1b[0m" }
+func ansiRed(s string) string   { return "\x1b[31m" + s + "\x1b[0m" }
 
 func writeKV(w *os.File, key, val string) {
     fmt.Fprintf(w, "%-10s %s\n", key, nonEmptyOrDash(val))

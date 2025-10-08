@@ -22,10 +22,12 @@ func init() {
     // Global flags
     rootCmd.PersistentFlags().StringP("format", "o", "json", "Output format (json|table)")
     rootCmd.PersistentFlags().Bool("pretty", false, "Pretty print output")
+    rootCmd.PersistentFlags().String("color", "auto", "Color output (auto|always|never)")
 
     // Bind to viper for future config/env usage
     _ = viper.BindPFlag("format", rootCmd.PersistentFlags().Lookup("format"))
     _ = viper.BindPFlag("pretty", rootCmd.PersistentFlags().Lookup("pretty"))
+    _ = viper.BindPFlag("color", rootCmd.PersistentFlags().Lookup("color"))
 
     viper.SetEnvPrefix("YF")
     viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

@@ -1,10 +1,5 @@
 package yfapi
 
-import (
-	"context"
-	"encoding/json"
-)
-
 // AllowedQuoteSummaryModules is the full list of modules supported by Yahoo's quoteSummary.
 var AllowedQuoteSummaryModules = []string{
 	"assetProfile",
@@ -133,18 +128,4 @@ type QuoteSummaryTyped struct {
 	SummaryDetail *SummaryDetailModule `json:"summaryDetail,omitempty"`
 	FinancialData *FinancialDataModule `json:"financialData,omitempty"`
 	AssetProfile  *AssetProfileModule  `json:"assetProfile,omitempty"`
-}
-
-// FetchQuoteSummaryTyped fetches the quoteSummary and converts it into typed struct.
-// Warning: not tested (not used for now)
-func FetchQuoteSummaryTyped(ctx context.Context, symbol string, modules []string) (QuoteSummaryTyped, error) {
-	raw, err := FetchQuoteSummary(ctx, symbol, modules)
-	if err != nil {
-		return QuoteSummaryTyped{}, err
-	}
-	// Convert untyped into our typed struct (missing fields are zero values).
-	var out QuoteSummaryTyped
-	b, _ := json.Marshal(raw)
-	_ = json.Unmarshal(b, &out)
-	return out, nil
 }

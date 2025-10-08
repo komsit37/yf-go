@@ -113,27 +113,30 @@ type FinancialDataModule struct {
 // AssetProfileModule captures a subset of common fields from the assetProfile module.
 // This is intentionally lightweight; additional fields can be added as needed.
 type AssetProfileModule struct {
-    Sector               string `json:"sector"`
-    Industry             string `json:"industry"`
-    Website              string `json:"website"`
-    LongBusinessSummary  string `json:"longBusinessSummary"`
-    Address1             string `json:"address1"`
-    City                 string `json:"city"`
-    State                string `json:"state"`
-    Country              string `json:"country"`
-    FullTimeEmployees    int64  `json:"fullTimeEmployees"`
+	Sector              string `json:"sector"`
+	Industry            string `json:"industry"`
+	Website             string `json:"website"`
+	LongBusinessSummary string `json:"longBusinessSummary"`
+	Address1            string `json:"address1"`
+	City                string `json:"city"`
+	State               string `json:"state"`
+	Country             string `json:"country"`
+	FullTimeEmployees   int64  `json:"fullTimeEmployees"`
 }
 
-// QuoteSummaryTyped is a convenient typed view over the most useful modules.
+// QuoteSummaryTyped is a convenient typed view over commonly used modules.
+// All modules are optional; fields are pointers and will be nil if the module
+// was not requested or not present in the response.
+// Warning: not tested
 type QuoteSummaryTyped struct {
-    Price         PriceModule          `json:"price"`
-    SummaryDetail SummaryDetailModule  `json:"summaryDetail"`
-    FinancialData FinancialDataModule  `json:"financialData"`
-    // Optional module
-    AssetProfile  *AssetProfileModule  `json:"assetProfile,omitempty"`
+	Price         *PriceModule         `json:"price,omitempty"`
+	SummaryDetail *SummaryDetailModule `json:"summaryDetail,omitempty"`
+	FinancialData *FinancialDataModule `json:"financialData,omitempty"`
+	AssetProfile  *AssetProfileModule  `json:"assetProfile,omitempty"`
 }
 
 // FetchQuoteSummaryTyped fetches the quoteSummary and converts it into typed struct.
+// Warning: not tested (not used for now)
 func FetchQuoteSummaryTyped(ctx context.Context, symbol string, modules []string) (QuoteSummaryTyped, error) {
 	raw, err := FetchQuoteSummary(ctx, symbol, modules)
 	if err != nil {

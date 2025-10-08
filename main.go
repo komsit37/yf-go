@@ -1,14 +1,13 @@
 package main
 
 import (
-    "log"
+	"log"
 
-    "yf/cmd"
+	"yf/cmd"
 )
 
 func main() {
-    if err := cmd.Execute(); err != nil {
-        log.Fatal(err)
-    }
+	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
-

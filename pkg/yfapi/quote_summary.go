@@ -16,4 +16,3 @@ func FetchQuoteSummary(ctx context.Context, symbol string, modules []string) (an
 	_ = url.PathEscape(symbol)
 	return Default.QuoteSummary(ctx, symbol, modules)
 }
-

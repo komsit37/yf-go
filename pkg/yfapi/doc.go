@@ -3,11 +3,10 @@
 //
 // Most users should depend on the API interface for easy testing and DI:
 //
-//  var api yfapi.API = yfapi.NewClient()
-//  typed, err := api.QuoteSummaryTyped(ctx, "AAPL", []string{"price", "summaryDetail", "financialData"})
+//	var api yfapi.API = yfapi.NewClient()
+//	typed, err := api.QuoteSummaryTyped(ctx, "AAPL", []string{"price", "summaryDetail", "financialData"})
 //
 // Convenience package-level functions are also available and use a default client:
 //
-//  raw, err := yfapi.FetchQuoteSummary(ctx, "AAPL", yfapi.DefaultQuoteSummaryModules)
+//	raw, err := yfapi.FetchQuoteSummary(ctx, "AAPL", yfapi.DefaultQuoteSummaryModules)
 package yfapi
-

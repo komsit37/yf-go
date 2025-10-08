@@ -1,132 +1,131 @@
 package yfapi
 
 import (
-    "context"
-    "encoding/json"
+	"context"
+	"encoding/json"
 )
 
 // AllowedQuoteSummaryModules is the full list of modules supported by Yahoo's quoteSummary.
 var AllowedQuoteSummaryModules = []string{
-    "assetProfile",
-    "balanceSheetHistory",
-    "balanceSheetHistoryQuarterly",
-    "calendarEvents",
-    "cashflowStatementHistory",
-    "cashflowStatementHistoryQuarterly",
-    "defaultKeyStatistics",
-    "earnings",
-    "earningsHistory",
-    "earningsTrend",
-    "financialData",
-    "fundOwnership",
-    "fundPerformance",
-    "fundProfile",
-    "incomeStatementHistory",
-    "incomeStatementHistoryQuarterly",
-    "indexTrend",
-    "industryTrend",
-    "insiderHolders",
-    "insiderTransactions",
-    "institutionOwnership",
-    "majorDirectHolders",
-    "majorHoldersBreakdown",
-    "netSharePurchaseActivity",
-    "price",
-    "quoteType",
-    "recommendationTrend",
-    "secFilings",
-    "sectorTrend",
-    "summaryDetail",
-    "summaryProfile",
-    "symbol",
-    "topHoldings",
-    "upgradeDowngradeHistory",
+	"assetProfile",
+	"balanceSheetHistory",
+	"balanceSheetHistoryQuarterly",
+	"calendarEvents",
+	"cashflowStatementHistory",
+	"cashflowStatementHistoryQuarterly",
+	"defaultKeyStatistics",
+	"earnings",
+	"earningsHistory",
+	"earningsTrend",
+	"financialData",
+	"fundOwnership",
+	"fundPerformance",
+	"fundProfile",
+	"incomeStatementHistory",
+	"incomeStatementHistoryQuarterly",
+	"indexTrend",
+	"industryTrend",
+	"insiderHolders",
+	"insiderTransactions",
+	"institutionOwnership",
+	"majorDirectHolders",
+	"majorHoldersBreakdown",
+	"netSharePurchaseActivity",
+	"price",
+	"quoteType",
+	"recommendationTrend",
+	"secFilings",
+	"sectorTrend",
+	"summaryDetail",
+	"summaryProfile",
+	"symbol",
+	"topHoldings",
+	"upgradeDowngradeHistory",
 }
 
 // DefaultQuoteSummaryModules is the minimal set used by table rendering.
 var DefaultQuoteSummaryModules = []string{
-    "price",
-    "summaryDetail",
-    "financialData",
+	"price",
+	"summaryDetail",
+	"financialData",
 }
 
 // YNum mirrors Yahoo's number objects which commonly contain raw/fmt/longFmt.
 type YNum struct {
-    Raw     *float64 `json:"raw"`
-    Fmt     string   `json:"fmt"`
-    LongFmt string   `json:"longFmt"`
+	Raw     *float64 `json:"raw"`
+	Fmt     string   `json:"fmt"`
+	LongFmt string   `json:"longFmt"`
 }
 
 type PriceModule struct {
-    Symbol                    string `json:"symbol"`
-    ShortName                 string `json:"shortName"`
-    LongName                  string `json:"longName"`
-    Currency                  string `json:"currency"`
-    Exchange                  string `json:"exchange"`
-    FullExchangeName          string `json:"fullExchangeName"`
-    MarketState               string `json:"marketState"`
-    ExchangeTimezoneName      string `json:"exchangeTimezoneName"`
-    ExchangeTimezoneShortName string `json:"exchangeTimezoneShortName"`
-    RegularMarketPrice        YNum   `json:"regularMarketPrice"`
-    RegularMarketChangePercent YNum  `json:"regularMarketChangePercent"`
-    RegularMarketTime         int64  `json:"regularMarketTime"`
-    RegularMarketVolume       YNum   `json:"regularMarketVolume"`
-    AverageDailyVolume3Month  YNum   `json:"averageDailyVolume3Month"`
-    MarketCap                 YNum   `json:"marketCap"`
-    TrailingPE                YNum   `json:"trailingPE"`
+	Symbol                     string `json:"symbol"`
+	ShortName                  string `json:"shortName"`
+	LongName                   string `json:"longName"`
+	Currency                   string `json:"currency"`
+	Exchange                   string `json:"exchange"`
+	FullExchangeName           string `json:"fullExchangeName"`
+	MarketState                string `json:"marketState"`
+	ExchangeTimezoneName       string `json:"exchangeTimezoneName"`
+	ExchangeTimezoneShortName  string `json:"exchangeTimezoneShortName"`
+	RegularMarketPrice         YNum   `json:"regularMarketPrice"`
+	RegularMarketChangePercent YNum   `json:"regularMarketChangePercent"`
+	RegularMarketTime          int64  `json:"regularMarketTime"`
+	RegularMarketVolume        YNum   `json:"regularMarketVolume"`
+	AverageDailyVolume3Month   YNum   `json:"averageDailyVolume3Month"`
+	MarketCap                  YNum   `json:"marketCap"`
+	TrailingPE                 YNum   `json:"trailingPE"`
 }
 
 type SummaryDetailModule struct {
-    DividendYield    YNum `json:"dividendYield"`
-    DividendRate     YNum `json:"dividendRate"`
-    PayoutRatio      YNum `json:"payoutRatio"`
-    FiftyTwoWeekLow  YNum `json:"fiftyTwoWeekLow"`
-    FiftyTwoWeekHigh YNum `json:"fiftyTwoWeekHigh"`
-    TrailingPE       YNum `json:"trailingPE"`
+	DividendYield    YNum `json:"dividendYield"`
+	DividendRate     YNum `json:"dividendRate"`
+	PayoutRatio      YNum `json:"payoutRatio"`
+	FiftyTwoWeekLow  YNum `json:"fiftyTwoWeekLow"`
+	FiftyTwoWeekHigh YNum `json:"fiftyTwoWeekHigh"`
+	TrailingPE       YNum `json:"trailingPE"`
 }
 
 type FinancialDataModule struct {
-    FinancialCurrency string `json:"financialCurrency"`
+	FinancialCurrency string `json:"financialCurrency"`
 
-    GrossMargins     YNum `json:"grossMargins"`
-    OperatingMargins YNum `json:"operatingMargins"`
-    EbitdaMargins    YNum `json:"ebitdaMargins"`
-    ProfitMargins    YNum `json:"profitMargins"`
+	GrossMargins     YNum `json:"grossMargins"`
+	OperatingMargins YNum `json:"operatingMargins"`
+	EbitdaMargins    YNum `json:"ebitdaMargins"`
+	ProfitMargins    YNum `json:"profitMargins"`
 
-    ReturnOnAssets YNum `json:"returnOnAssets"`
-    ReturnOnEquity YNum `json:"returnOnEquity"`
+	ReturnOnAssets YNum `json:"returnOnAssets"`
+	ReturnOnEquity YNum `json:"returnOnEquity"`
 
-    RevenueGrowth  YNum `json:"revenueGrowth"`
-    EarningsGrowth YNum `json:"earningsGrowth"`
+	RevenueGrowth  YNum `json:"revenueGrowth"`
+	EarningsGrowth YNum `json:"earningsGrowth"`
 
-    CurrentRatio YNum `json:"currentRatio"`
-    QuickRatio   YNum `json:"quickRatio"`
-    DebtToEquity YNum `json:"debtToEquity"`
+	CurrentRatio YNum `json:"currentRatio"`
+	QuickRatio   YNum `json:"quickRatio"`
+	DebtToEquity YNum `json:"debtToEquity"`
 
-    TotalRevenue YNum `json:"totalRevenue"`
-    Ebitda       YNum `json:"ebitda"`
-    TotalCash    YNum `json:"totalCash"`
-    TotalDebt    YNum `json:"totalDebt"`
-    CashPerShare YNum `json:"totalCashPerShare"`
+	TotalRevenue YNum `json:"totalRevenue"`
+	Ebitda       YNum `json:"ebitda"`
+	TotalCash    YNum `json:"totalCash"`
+	TotalDebt    YNum `json:"totalDebt"`
+	CashPerShare YNum `json:"totalCashPerShare"`
 }
 
 // QuoteSummaryTyped is a convenient typed view over the most useful modules.
 type QuoteSummaryTyped struct {
-    Price         PriceModule         `json:"price"`
-    SummaryDetail SummaryDetailModule `json:"summaryDetail"`
-    FinancialData FinancialDataModule `json:"financialData"`
+	Price         PriceModule         `json:"price"`
+	SummaryDetail SummaryDetailModule `json:"summaryDetail"`
+	FinancialData FinancialDataModule `json:"financialData"`
 }
 
 // FetchQuoteSummaryTyped fetches the quoteSummary and converts it into typed struct.
 func FetchQuoteSummaryTyped(ctx context.Context, symbol string, modules []string) (QuoteSummaryTyped, error) {
-    raw, err := FetchQuoteSummary(ctx, symbol, modules)
-    if err != nil {
-        return QuoteSummaryTyped{}, err
-    }
-    // Convert untyped into our typed struct (missing fields are zero values).
-    var out QuoteSummaryTyped
-    b, _ := json.Marshal(raw)
-    _ = json.Unmarshal(b, &out)
-    return out, nil
+	raw, err := FetchQuoteSummary(ctx, symbol, modules)
+	if err != nil {
+		return QuoteSummaryTyped{}, err
+	}
+	// Convert untyped into our typed struct (missing fields are zero values).
+	var out QuoteSummaryTyped
+	b, _ := json.Marshal(raw)
+	_ = json.Unmarshal(b, &out)
+	return out, nil
 }
-

@@ -6,10 +6,10 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"yf/pkg/yfapi"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"yf/pkg/yfapi"
 )
 
 var qsCmd = &cobra.Command{
@@ -41,19 +41,15 @@ var qsCmd = &cobra.Command{
 
 		// Fetch data
 		ctx := context.Background()
+		result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, typedMods)
+		if err != nil {
+			return err
+		}
 		switch viper.GetString("format") {
 		case "json":
-			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, typedMods)
-			if err != nil {
-				return err
-			}
 			return printJSON(result, viper.GetBool("pretty"))
 		case "table":
 			// Generic rendering: display whatever modules/fields are present
-			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, typedMods)
-			if err != nil {
-				return err
-			}
 			renderSummary(os.Stdout, result)
 			return nil
 		default:
@@ -221,6 +217,7 @@ func scalar(v any) string {
 
 // fmtFloat and trimZeros are small helpers for compact numeric display.
 func fmtFloat(f float64) string { return fmt.Sprintf("%.3f", f) }
+
 func trimZeros(s string) string {
 	s = strings.TrimRight(s, "0")
 	s = strings.TrimRight(s, ".")

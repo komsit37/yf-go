@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"yf/pkg/yfapi"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"yf/pkg/yfapi"
 )
 
 // priceCmd is a convenience command equivalent to:
@@ -28,18 +28,14 @@ var priceCmd = &cobra.Command{
 		modules := []yfapi.QuoteSummaryModule{yfapi.ModulePrice}
 
 		ctx := context.Background()
+		result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, modules)
+		if err != nil {
+			return err
+		}
 		switch viper.GetString("format") {
 		case "json":
-			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, modules)
-			if err != nil {
-				return err
-			}
 			return printJSON(result, viper.GetBool("pretty"))
 		case "table":
-			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, modules)
-			if err != nil {
-				return err
-			}
 			renderSummary(os.Stdout, result)
 			return nil
 		default:

@@ -12,12 +12,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-	// Supports multiple symbols via comma-separated input or multiple args.
+// Supports multiple symbols via comma-separated input or multiple args.
 var qsCmd = &cobra.Command{
-    Use:   "qs <symbol...>",
-    Short: "Get quote summary for one or more symbols",
-    Args:  cobra.MinimumNArgs(1),
-    RunE: func(cmd *cobra.Command, args []string) error {
+	Use:   "qs <symbol...>",
+	Short: "Get quote summary for one or more symbols",
+	Args:  cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
 		// If listing modules, print and exit early
 		if viper.GetBool("list-modules") {
 			// Build canonical module names from typed list
@@ -26,53 +26,51 @@ var qsCmd = &cobra.Command{
 				names = append(names, m.String())
 			}
 			sort.Strings(names)
-            if err := printJSON(names, viper.GetBool("pretty")); err != nil {
-                cmd.SilenceUsage = true
-                return err
-            }
-            return nil
-        }
+			if err := printJSON(names, viper.GetBool("pretty")); err != nil {
+				return err
+			}
+			return nil
+		}
 
 		// Parse symbols from args supporting comma-separated values
 		symbols := parseSymbols(args)
-        if len(symbols) == 0 {
-            return fmt.Errorf("symbol is required unless --list-modules is used")
-        }
+		if len(symbols) == 0 {
+			return fmt.Errorf("symbol is required unless --list-modules is used")
+		}
 
 		// Resolve modules from flags/env, supporting comma-separated values and aliases
-        typedMods, err := resolveModules(viper.GetStringSlice("modules"))
-        if err != nil {
-            // Argument/config error: allow usage to show.
-            return err
-        }
+		typedMods, err := resolveModules(viper.GetStringSlice("modules"))
+		if err != nil {
+			// Argument/config error: allow usage to show.
+			return err
+		}
 
+		// arg parsing done, suppress usage on error after this point
+		cmd.SilenceUsage = true
 		// Fetch data per symbol
 		ctx := context.Background()
 		results := make([]any, 0, len(symbols))
 		for _, sym := range symbols {
-            res, err := yfapi.DefaultAPI.QuoteSummary(ctx, sym, typedMods)
-            if err != nil {
-                // Runtime/API error: suppress usage output.
-                cmd.SilenceUsage = true
-                return err
-            }
-            results = append(results, res)
-        }
+			res, err := yfapi.DefaultAPI.QuoteSummary(ctx, sym, typedMods)
+			if err != nil {
+				// Runtime/API error: suppress usage output.
+				return err
+			}
+			results = append(results, res)
+		}
 
 		switch viper.GetString("format") {
 		case "json":
-            if len(results) == 1 {
-                if err := printJSON(results[0], viper.GetBool("pretty")); err != nil {
-                    cmd.SilenceUsage = true
-                    return err
-                }
-                return nil
-            }
-            if err := printJSON(results, viper.GetBool("pretty")); err != nil {
-                cmd.SilenceUsage = true
-                return err
-            }
-            return nil
+			if len(results) == 1 {
+				if err := printJSON(results[0], viper.GetBool("pretty")); err != nil {
+					return err
+				}
+				return nil
+			}
+			if err := printJSON(results, viper.GetBool("pretty")); err != nil {
+				return err
+			}
+			return nil
 		case "table":
 			for i, sym := range symbols {
 				if i > 0 {

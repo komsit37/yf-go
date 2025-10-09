@@ -8,22 +8,24 @@ type YNum struct {
 }
 
 type PriceModule struct {
-	Symbol                     string `json:"symbol"`
-	ShortName                  string `json:"shortName"`
-	LongName                   string `json:"longName"`
-	Currency                   string `json:"currency"`
-	Exchange                   string `json:"exchange"`
-	FullExchangeName           string `json:"fullExchangeName"`
-	MarketState                string `json:"marketState"`
-	ExchangeTimezoneName       string `json:"exchangeTimezoneName"`
-	ExchangeTimezoneShortName  string `json:"exchangeTimezoneShortName"`
-	RegularMarketPrice         YNum   `json:"regularMarketPrice"`
-	RegularMarketChangePercent YNum   `json:"regularMarketChangePercent"`
-	RegularMarketTime          int64  `json:"regularMarketTime"`
-	RegularMarketVolume        YNum   `json:"regularMarketVolume"`
-	AverageDailyVolume3Month   YNum   `json:"averageDailyVolume3Month"`
-	MarketCap                  YNum   `json:"marketCap"`
-	TrailingPE                 YNum   `json:"trailingPE"`
+    Symbol                     string `json:"symbol"`
+    ShortName                  string `json:"shortName"`
+    LongName                   string `json:"longName"`
+    Currency                   string `json:"currency"`
+    Exchange                   string `json:"exchange"`
+    FullExchangeName           string `json:"fullExchangeName"`
+    MarketState                string `json:"marketState"`
+    ExchangeTimezoneName       string `json:"exchangeTimezoneName"`
+    ExchangeTimezoneShortName  string `json:"exchangeTimezoneShortName"`
+    RegularMarketChange        YNum   `json:"regularMarketChange"`
+    RegularMarketPrice         YNum   `json:"regularMarketPrice"`
+    RegularMarketChangePercent YNum   `json:"regularMarketChangePercent"`
+    RegularMarketTime          int64  `json:"regularMarketTime"`
+    RegularMarketVolume        YNum   `json:"regularMarketVolume"`
+    AverageDailyVolume3Month   YNum   `json:"averageDailyVolume3Month"`
+    MarketCap                  YNum   `json:"marketCap"`
+    TrailingPE                 YNum   `json:"trailingPE"`
+    RegularMarketPreviousClose YNum   `json:"regularMarketPreviousClose"`
 }
 
 type SummaryDetailModule struct {

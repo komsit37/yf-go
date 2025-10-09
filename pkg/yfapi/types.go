@@ -81,8 +81,30 @@ type AssetProfileModule struct {
 // was not requested or not present in the response.
 // Warning: not tested
 type QuoteSummaryTyped struct {
-	Price         *PriceModule         `json:"price,omitempty"`
-	SummaryDetail *SummaryDetailModule `json:"summaryDetail,omitempty"`
-	FinancialData *FinancialDataModule `json:"financialData,omitempty"`
-	AssetProfile  *AssetProfileModule  `json:"assetProfile,omitempty"`
+    Price         *PriceModule         `json:"price,omitempty"`
+    SummaryDetail *SummaryDetailModule `json:"summaryDetail,omitempty"`
+    FinancialData *FinancialDataModule `json:"financialData,omitempty"`
+    AssetProfile  *AssetProfileModule  `json:"assetProfile,omitempty"`
+}
+
+// Quote represents a single entry from the v7/finance/quote endpoint
+// (aka quoteResponse.result[]). Fields are a minimal subset commonly used
+// by price displays. Values may be nil when unavailable.
+type Quote struct {
+    Symbol                     string   `json:"symbol"`
+    ShortName                  string   `json:"shortName"`
+    LongName                   string   `json:"longName"`
+    Currency                   string   `json:"currency"`
+    Exchange                   string   `json:"exchange"`
+    FullExchangeName           string   `json:"fullExchangeName"`
+    MarketState                string   `json:"marketState"`
+    RegularMarketChange        *float64 `json:"regularMarketChange"`
+    RegularMarketPrice         *float64 `json:"regularMarketPrice"`
+    RegularMarketChangePercent *float64 `json:"regularMarketChangePercent"`
+    RegularMarketTime          int64    `json:"regularMarketTime"`
+    RegularMarketPreviousClose *float64 `json:"regularMarketPreviousClose"`
+    RegularMarketVolume        *int64   `json:"regularMarketVolume"`
+    AverageDailyVolume3Month   *int64   `json:"averageDailyVolume3Month"`
+    MarketCap                  *int64   `json:"marketCap"`
+    TrailingPE                 *float64 `json:"trailingPE"`
 }

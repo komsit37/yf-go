@@ -12,10 +12,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+	// Supports multiple symbols via comma-separated input or multiple args.
 var qsCmd = &cobra.Command{
-	Use:   "qs [symbol]",
-	Short: "Get quote summary for a symbol",
-	Args:  cobra.MaximumNArgs(1),
+	Use:   "qs <symbol...>",
+	Short: "Get quote summary for one or more symbols",
+	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If listing modules, print and exit early
 		if viper.GetBool("list-modules") {
@@ -28,10 +29,11 @@ var qsCmd = &cobra.Command{
 			return printJSON(names, viper.GetBool("pretty"))
 		}
 
-		if len(args) != 1 {
+		// Parse symbols from args supporting comma-separated values
+		symbols := parseSymbols(args)
+		if len(symbols) == 0 {
 			return fmt.Errorf("symbol is required unless --list-modules is used")
 		}
-		symbol := args[0]
 
 		// Resolve modules from flags/env, supporting comma-separated values and aliases
 		typedMods, err := resolveModules(viper.GetStringSlice("modules"))
@@ -39,18 +41,32 @@ var qsCmd = &cobra.Command{
 			return err
 		}
 
-		// Fetch data
+		// Fetch data per symbol
 		ctx := context.Background()
-		result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, typedMods)
-		if err != nil {
-			return err
+		results := make([]any, 0, len(symbols))
+		for _, sym := range symbols {
+			res, err := yfapi.DefaultAPI.QuoteSummary(ctx, sym, typedMods)
+			if err != nil {
+				return err
+			}
+			results = append(results, res)
 		}
+
 		switch viper.GetString("format") {
 		case "json":
-			return printJSON(result, viper.GetBool("pretty"))
+			if len(results) == 1 {
+				return printJSON(results[0], viper.GetBool("pretty"))
+			}
+			return printJSON(results, viper.GetBool("pretty"))
 		case "table":
-			// Generic rendering: display whatever modules/fields are present
-			renderSummary(os.Stdout, result)
+			for i, sym := range symbols {
+				if i > 0 {
+					fmt.Fprintln(os.Stdout, "")
+				}
+				// Print a simple symbol heading before its modules
+				fmt.Fprintln(os.Stdout, strings.ToUpper(sym))
+				renderSummary(os.Stdout, results[i])
+			}
 			return nil
 		default:
 			return fmt.Errorf("unsupported format: %s", viper.GetString("format"))

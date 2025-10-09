@@ -13,8 +13,20 @@ if [[ -n "$dirty" ]]; then
   exit 1
 fi
 
+echo "[pre-commit] checking goimports..."
+if command -v goimports >/dev/null 2>&1; then
+  imports_dirty=$(goimports -l $(git ls-files '*.go') || true)
+  if [[ -n "$imports_dirty" ]]; then
+    echo "[pre-commit] The following files need goimports (imports formatting):" >&2
+    echo "$imports_dirty" | sed 's/^/  - /' >&2
+    echo "[pre-commit] Run: make imports" >&2
+    exit 1
+  fi
+else
+  echo "[pre-commit] goimports not installed; skipping imports check"
+fi
+
 echo "[pre-commit] go vet..."
 go vet ./...
 
 echo "[pre-commit] OK"
-

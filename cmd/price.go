@@ -35,13 +35,31 @@ var priceCmd = &cobra.Command{
 		// arg parsing done, suppress usage on error after this point
 		cmd.SilenceUsage = true
 		ctx := context.Background()
-		results := make([]yfapi.QuoteSummaryTyped, 0, len(symbols))
-		for _, s := range symbols {
-			r, err := yfapi.DefaultAPI.QuoteSummaryTyped(ctx, s, modules)
+		api := strings.ToLower(viper.GetString("api"))
+		var results []yfapi.QuoteSummaryTyped
+		switch api {
+		case "", "quote":
+			// Use v7/finance/quote which supports multiple symbols at once
+			quotes, err := yfapi.DefaultAPI.Quote(ctx, symbols)
 			if err != nil {
 				return err
 			}
-			results = append(results, r)
+			results = make([]yfapi.QuoteSummaryTyped, 0, len(quotes))
+			for _, q := range quotes {
+				results = append(results, quoteToSummaryTyped(q))
+			}
+		case "quotesummary":
+			// Fall back to v10/finance/quoteSummary per-symbol
+			results = make([]yfapi.QuoteSummaryTyped, 0, len(symbols))
+			for _, s := range symbols {
+				r, err := yfapi.DefaultAPI.QuoteSummaryTyped(ctx, s, modules)
+				if err != nil {
+					return err
+				}
+				results = append(results, r)
+			}
+		default:
+			return fmt.Errorf("unsupported --api: %s (allowed: quote, quotesummary)", api)
 		}
 
 		switch viper.GetString("format") {
@@ -77,6 +95,9 @@ func init() {
 	}
 	// Flag to show full columns (status and time)
 	priceCmd.Flags().Bool("full", false, "Show status and time columns")
+	// API selection: quote (default) supports multiple symbols, or quotesummary
+	priceCmd.Flags().String("api", "quote", "API to use (quote|quotesummary); default quote supports multiple symbols")
+	_ = viper.BindPFlag("api", priceCmd.Flags().Lookup("api"))
 	rootCmd.AddCommand(priceCmd)
 }
 
@@ -255,4 +276,53 @@ func formatMarketTime(sec int64, tzName string) string {
 		return tm.Format("15:04 MST")
 	}
 	return tm.Format("2006-01-02 15:04 MST")
+}
+
+// quoteToSummaryTyped adapts a v7 Quote into the minimal QuoteSummaryTyped shape
+// expected by the price table renderer (i.e., populating only Price module fields used).
+func quoteToSummaryTyped(q yfapi.Quote) yfapi.QuoteSummaryTyped {
+	// helper to build a YNum from *float64
+	ynf := func(p *float64) yfapi.YNum {
+		if p == nil {
+			return yfapi.YNum{}
+		}
+		return yfapi.YNum{Raw: p}
+	}
+	// helper to build a YNum from *int64
+	yni := func(p *int64) yfapi.YNum {
+		if p == nil {
+			return yfapi.YNum{}
+		}
+		f := float64(*p)
+		return yfapi.YNum{Raw: &f}
+	}
+	// helper for percent values coming from quote API where the numeric
+	// value is already a percent (e.g., 0.87 for 0.87%). Convert to fraction.
+	ynPercent := func(p *float64) yfapi.YNum {
+		if p == nil {
+			return yfapi.YNum{}
+		}
+		f := *p / 100.0
+		return yfapi.YNum{Raw: &f}
+	}
+
+	pm := &yfapi.PriceModule{
+		Symbol:                     q.Symbol,
+		ShortName:                  q.ShortName,
+		LongName:                   q.LongName,
+		Currency:                   q.Currency,
+		Exchange:                   q.Exchange,
+		FullExchangeName:           q.FullExchangeName,
+		MarketState:                q.MarketState,
+		RegularMarketChange:        ynf(q.RegularMarketChange),
+		RegularMarketPrice:         ynf(q.RegularMarketPrice),
+		RegularMarketChangePercent: ynPercent(q.RegularMarketChangePercent),
+		RegularMarketTime:          q.RegularMarketTime,
+		RegularMarketVolume:        yni(q.RegularMarketVolume),
+		AverageDailyVolume3Month:   yni(q.AverageDailyVolume3Month),
+		MarketCap:                  yni(q.MarketCap),
+		TrailingPE:                 ynf(q.TrailingPE),
+		RegularMarketPreviousClose: ynf(q.RegularMarketPreviousClose),
+	}
+	return yfapi.QuoteSummaryTyped{Price: pm}
 }

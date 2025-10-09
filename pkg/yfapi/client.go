@@ -26,10 +26,10 @@ type Client struct {
 type API interface {
 	// QuoteSummary fetches Yahoo Finance quoteSummary for a symbol with selected modules.
 	// It returns the first object of quoteSummary.result as an untyped value.
-	QuoteSummary(ctx context.Context, symbol string, modules []string) (any, error)
+	QuoteSummary(ctx context.Context, symbol string, modules []QuoteSummaryModule) (any, error)
 
 	// QuoteSummaryTyped is a convenience that maps a subset of modules into a typed struct.
-	QuoteSummaryTyped(ctx context.Context, symbol string, modules []string) (QuoteSummaryTyped, error)
+	QuoteSummaryTyped(ctx context.Context, symbol string, modules []QuoteSummaryModule) (QuoteSummaryTyped, error)
 }
 
 // NewClient creates a Yahoo Finance client with cookie jar and timeout.
@@ -111,7 +111,7 @@ func (c *Client) ensureCrumb(ctx context.Context) error {
 }
 
 // QuoteSummary calls the Yahoo Finance quoteSummary endpoint.
-func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []string) (any, error) {
+func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []QuoteSummaryModule) (any, error) {
 	if err := c.ensureCrumb(ctx); err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []stri
 	base := fmt.Sprintf("https://query1.finance.yahoo.com/v10/finance/quoteSummary/%s", url.PathEscape(symbol))
 	q := url.Values{}
 	if len(modules) > 0 {
-		q.Set("modules", strings.Join(modules, ","))
+		q.Set("modules", strings.Join(ModulesToStrings(modules), ","))
 	}
 	q.Set("crumb", c.crumb)
 	u := base + "?" + q.Encode()
@@ -174,7 +174,7 @@ func (c *Client) callQuoteSummary(ctx context.Context, u string) (any, int, stri
 func jsonUnmarshal(b []byte, v any) error { return defaultJSON.Unmarshal(b, v) }
 
 // QuoteSummaryTyped implements API.QuoteSummaryTyped using this client instance.
-func (c *Client) QuoteSummaryTyped(ctx context.Context, symbol string, modules []string) (QuoteSummaryTyped, error) {
+func (c *Client) QuoteSummaryTyped(ctx context.Context, symbol string, modules []QuoteSummaryModule) (QuoteSummaryTyped, error) {
 	raw, err := c.QuoteSummary(ctx, symbol, modules)
 	if err != nil {
 		return QuoteSummaryTyped{}, err

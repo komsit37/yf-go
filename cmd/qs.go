@@ -19,9 +19,13 @@ var qsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If listing modules, print and exit early
 		if viper.GetBool("list-modules") {
-			modules := append([]string(nil), yfapi.AllowedQuoteSummaryModules...)
-			sort.Strings(modules)
-			return printJSON(modules, viper.GetBool("pretty"))
+			// Build canonical module names from typed list
+			names := make([]string, 0, len(yfapi.AllowedQuoteSummaryModules))
+			for _, m := range yfapi.AllowedQuoteSummaryModules {
+				names = append(names, m.String())
+			}
+			sort.Strings(names)
+			return printJSON(names, viper.GetBool("pretty"))
 		}
 
 		if len(args) != 1 {
@@ -29,21 +33,9 @@ var qsCmd = &cobra.Command{
 		}
 		symbol := args[0]
 
-		// Modules from flag/env; fallback to defaults
-		modules := viper.GetStringSlice("modules")
-		if len(modules) == 0 {
-			modules = append([]string(nil), yfapi.DefaultQuoteSummaryModules...)
-		}
-		// Support comma-separated values passed as a single item (e.g., -m a,b,c)
-		if len(modules) == 1 && strings.Contains(modules[0], ",") {
-			modules = strings.Split(modules[0], ",")
-		}
-		// Trim whitespace from modules
-		for i := range modules {
-			modules[i] = strings.TrimSpace(modules[i])
-		}
-		// Validate requested modules
-		if err := validateModules(modules, yfapi.AllowedQuoteSummaryModules); err != nil {
+		// Resolve modules from flags/env, supporting comma-separated values and aliases
+		typedMods, err := resolveModules(viper.GetStringSlice("modules"))
+		if err != nil {
 			return err
 		}
 
@@ -51,14 +43,14 @@ var qsCmd = &cobra.Command{
 		ctx := context.Background()
 		switch viper.GetString("format") {
 		case "json":
-			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, modules)
+			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, typedMods)
 			if err != nil {
 				return err
 			}
 			return printJSON(result, viper.GetBool("pretty"))
 		case "table":
 			// Generic rendering: display whatever modules/fields are present
-			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, modules)
+			result, err := yfapi.DefaultAPI.QuoteSummary(ctx, symbol, typedMods)
 			if err != nil {
 				return err
 			}
@@ -73,7 +65,7 @@ var qsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(qsCmd)
 	// Add modules flag supporting repeats or comma separated values
-	qsCmd.Flags().StringSliceP("modules", "m", yfapi.DefaultQuoteSummaryModules, "QuoteSummary modules (repeat or comma-separated). Use --modules multiple times or a,b,c")
+	qsCmd.Flags().StringSliceP("modules", "m", yfapi.ModulesToStrings(yfapi.DefaultQuoteSummaryModules), "QuoteSummary modules (repeat or comma-separated). Use --modules multiple times or a,b,c")
 	_ = viper.BindPFlag("modules", qsCmd.Flags().Lookup("modules"))
 	// Add list-modules flag to print supported modules and exit without a symbol
 	qsCmd.Flags().Bool("list-modules", false, "List supported quoteSummary modules and exit")
@@ -81,22 +73,46 @@ func init() {
 }
 
 // validateModules ensures all requested modules are supported; returns a helpful error otherwise.
-func validateModules(requested, allowed []string) error {
-	allowedSet := make(map[string]struct{}, len(allowed))
-	for _, m := range allowed {
-		allowedSet[m] = struct{}{}
-	}
+func parseAndValidateModules(requested []string) ([]yfapi.QuoteSummaryModule, error) {
+	var out []yfapi.QuoteSummaryModule
 	var invalid []string
-	for _, m := range requested {
-		if _, ok := allowedSet[m]; !ok {
-			invalid = append(invalid, m)
+	for _, r := range requested {
+		if m, ok := yfapi.ParseQuoteSummaryModule(r); ok {
+			out = append(out, m)
+		} else {
+			invalid = append(invalid, r)
 		}
 	}
 	if len(invalid) == 0 {
-		return nil
+		return out, nil
+	}
+	// Build allowed canonical names for the error message
+	allowed := make([]string, 0, len(yfapi.AllowedQuoteSummaryModules))
+	for _, m := range yfapi.AllowedQuoteSummaryModules {
+		allowed = append(allowed, m.String())
 	}
 	sort.Strings(allowed)
-	return fmt.Errorf("invalid module(s): %s. Allowed: %s", strings.Join(invalid, ", "), strings.Join(allowed, ", "))
+	return nil, fmt.Errorf("invalid module(s): %s. Allowed: %s", strings.Join(invalid, ", "), strings.Join(allowed, ", "))
+}
+
+// resolveModules converts raw module strings into typed modules.
+// It supports comma-separated values, trims whitespace, and falls back to
+// defaults when the provided slice is empty.
+func resolveModules(raw []string) ([]yfapi.QuoteSummaryModule, error) {
+	// Flatten any comma-separated entries
+	var requested []string
+	for _, item := range raw {
+		for _, seg := range strings.Split(item, ",") {
+			if s := strings.TrimSpace(seg); s != "" {
+				requested = append(requested, s)
+			}
+		}
+	}
+	if len(requested) == 0 {
+		// Use typed defaults directly
+		return append([]yfapi.QuoteSummaryModule(nil), yfapi.DefaultQuoteSummaryModules...), nil
+	}
+	return parseAndValidateModules(requested)
 }
 
 // ---- Rendering (table) ----

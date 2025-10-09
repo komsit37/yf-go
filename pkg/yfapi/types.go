@@ -1,50 +1,5 @@
 package yfapi
 
-// AllowedQuoteSummaryModules is the full list of modules supported by Yahoo's quoteSummary.
-var AllowedQuoteSummaryModules = []string{
-	"assetProfile",
-	"balanceSheetHistory",
-	"balanceSheetHistoryQuarterly",
-	"calendarEvents",
-	"cashflowStatementHistory",
-	"cashflowStatementHistoryQuarterly",
-	"defaultKeyStatistics",
-	"earnings",
-	"earningsHistory",
-	"earningsTrend",
-	"financialData",
-	"fundOwnership",
-	"fundPerformance",
-	"fundProfile",
-	"incomeStatementHistory",
-	"incomeStatementHistoryQuarterly",
-	"indexTrend",
-	"industryTrend",
-	"insiderHolders",
-	"insiderTransactions",
-	"institutionOwnership",
-	"majorDirectHolders",
-	"majorHoldersBreakdown",
-	"netSharePurchaseActivity",
-	"price",
-	"quoteType",
-	"recommendationTrend",
-	"secFilings",
-	"sectorTrend",
-	"summaryDetail",
-	"summaryProfile",
-	"symbol",
-	"topHoldings",
-	"upgradeDowngradeHistory",
-}
-
-// DefaultQuoteSummaryModules is the minimal set used by table rendering.
-var DefaultQuoteSummaryModules = []string{
-	"price",
-	"summaryDetail",
-	"financialData",
-}
-
 // YNum mirrors Yahoo's number objects which commonly contain raw/fmt/longFmt.
 type YNum struct {
 	Raw     *float64 `json:"raw"`

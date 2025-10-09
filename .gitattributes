@@ -1,0 +1,10 @@
+# Normalize line endings and avoid CRLF churn across platforms
+* text=auto eol=lf
+
+# Treat these as text explicitly
+*.go text
+*.md text
+*.yaml text
+*.yml text
+*.json text
+

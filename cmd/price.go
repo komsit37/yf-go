@@ -111,44 +111,44 @@ func renderPriceTable(w *os.File, v yfapi.QuoteSummaryTyped, full bool) {
 	t.Style().Options.SeparateRows = false
 	t.Style().Options.SeparateColumns = true
 
-    hdr := table.Row{"Sym", "Price", "Chg", "Chg%", "Prev", "Mkt Cap"}
+	hdr := table.Row{"Sym", "Price", "Chg", "Chg%", "Prev", "Mkt Cap"}
 	if full {
 		hdr = append(hdr, "Status", "Time")
 	}
 	t.AppendHeader(hdr)
 
-    var (
-        symbol       string
-        price        string
-        prevClose    string
-        marketCap    string
-        marketStatus string
-        dataTimeStr  string
-    )
+	var (
+		symbol       string
+		price        string
+		prevClose    string
+		marketCap    string
+		marketStatus string
+		dataTimeStr  string
+	)
 
-    if v.Price != nil {
-        p := v.Price
-        symbol = p.Symbol
-        price = formatPrice1(p.RegularMarketPrice)
-        prevClose = formatPrice1(p.RegularMarketPreviousClose)
-        marketCap = formatMarketCap(p.MarketCap)
-        marketStatus = p.MarketState
-        dataTimeStr = formatMarketTime(p.RegularMarketTime, p.ExchangeTimezoneName)
-    }
+	if v.Price != nil {
+		p := v.Price
+		symbol = p.Symbol
+		price = formatPrice1(p.RegularMarketPrice)
+		prevClose = formatPrice1(p.RegularMarketPreviousClose)
+		marketCap = formatMarketCap(p.MarketCap)
+		marketStatus = p.MarketState
+		dataTimeStr = formatMarketTime(p.RegularMarketTime, p.ExchangeTimezoneName)
+	}
 
 	// Align numeric-ish columns to the right
-    cfgs := []table.ColumnConfig{
-        {Name: "Price", Align: text.AlignRight},
-        {Name: "Chg", Align: text.AlignRight},
-        {Name: "Chg%", Align: text.AlignRight},
-        {Name: "Prev", Align: text.AlignRight},
-        {Name: "Mkt Cap", Align: text.AlignRight},
-    }
+	cfgs := []table.ColumnConfig{
+		{Name: "Price", Align: text.AlignRight},
+		{Name: "Chg", Align: text.AlignRight},
+		{Name: "Chg%", Align: text.AlignRight},
+		{Name: "Prev", Align: text.AlignRight},
+		{Name: "Mkt Cap", Align: text.AlignRight},
+	}
 	t.SetColumnConfigs(cfgs)
 
-    // Split change columns for better alignment
-    chAbs, chPct := changeColumns(v.Price.RegularMarketChange, v.Price.RegularMarketChangePercent)
-    row := table.Row{symbol, price, chAbs, chPct, prevClose, marketCap}
+	// Split change columns for better alignment
+	chAbs, chPct := changeColumns(v.Price.RegularMarketChange, v.Price.RegularMarketChangePercent)
+	row := table.Row{symbol, price, chAbs, chPct, prevClose, marketCap}
 	if full {
 		row = append(row, marketStatus, dataTimeStr)
 	}
@@ -165,40 +165,40 @@ func renderPriceTableMany(w *os.File, results []yfapi.QuoteSummaryTyped, full bo
 	t.Style().Options.SeparateRows = false
 	t.Style().Options.SeparateColumns = true
 
-    hdr := table.Row{"Sym", "Price", "Chg", "Chg%", "Prev", "Mkt Cap"}
+	hdr := table.Row{"Sym", "Price", "Chg", "Chg%", "Prev", "Mkt Cap"}
 	if full {
 		hdr = append(hdr, "Status", "Time")
 	}
 	t.AppendHeader(hdr)
 
 	t.SetColumnConfigs([]table.ColumnConfig{
-        {Name: "Price", Align: text.AlignRight},
-        {Name: "Chg", Align: text.AlignRight},
-        {Name: "Chg%", Align: text.AlignRight},
-        {Name: "Prev", Align: text.AlignRight},
-        {Name: "Mkt Cap", Align: text.AlignRight},
+		{Name: "Price", Align: text.AlignRight},
+		{Name: "Chg", Align: text.AlignRight},
+		{Name: "Chg%", Align: text.AlignRight},
+		{Name: "Prev", Align: text.AlignRight},
+		{Name: "Mkt Cap", Align: text.AlignRight},
 	})
 
-    for _, v := range results {
-        var (
-            symbol       string
-            price        string
-            prevClose    string
-            marketCap    string
-            marketStatus string
-            dataTimeStr  string
-        )
-        if v.Price != nil {
-            p := v.Price
-            symbol = p.Symbol
-            price = formatPrice1(p.RegularMarketPrice)
-            prevClose = formatPrice1(p.RegularMarketPreviousClose)
-            marketCap = formatMarketCap(p.MarketCap)
-            marketStatus = p.MarketState
-            dataTimeStr = formatMarketTime(p.RegularMarketTime, p.ExchangeTimezoneName)
-        }
-        chAbs, chPct := changeColumns(v.Price.RegularMarketChange, v.Price.RegularMarketChangePercent)
-        row := table.Row{symbol, price, chAbs, chPct, prevClose, marketCap}
+	for _, v := range results {
+		var (
+			symbol       string
+			price        string
+			prevClose    string
+			marketCap    string
+			marketStatus string
+			dataTimeStr  string
+		)
+		if v.Price != nil {
+			p := v.Price
+			symbol = p.Symbol
+			price = formatPrice1(p.RegularMarketPrice)
+			prevClose = formatPrice1(p.RegularMarketPreviousClose)
+			marketCap = formatMarketCap(p.MarketCap)
+			marketStatus = p.MarketState
+			dataTimeStr = formatMarketTime(p.RegularMarketTime, p.ExchangeTimezoneName)
+		}
+		chAbs, chPct := changeColumns(v.Price.RegularMarketChange, v.Price.RegularMarketChangePercent)
+		row := table.Row{symbol, price, chAbs, chPct, prevClose, marketCap}
 		if full {
 			row = append(row, marketStatus, dataTimeStr)
 		}
@@ -232,13 +232,13 @@ func displayY(n yfapi.YNum) string {
 }
 
 func formatChange(ch yfapi.YNum, pct yfapi.YNum) string {
-    // Absolute change with thousands separator
-    chStr := formatChangeAbs(ch)
-    // pct.Fmt usually includes the percent sign; if missing, format.
-    pctStr := pct.Fmt
-    if pctStr == "" && pct.Raw != nil {
-        pctStr = fmt.Sprintf("%.1f%%", *pct.Raw*100)
-    }
+	// Absolute change with thousands separator
+	chStr := formatChangeAbs(ch)
+	// pct.Fmt usually includes the percent sign; if missing, format.
+	pctStr := pct.Fmt
+	if pctStr == "" && pct.Raw != nil {
+		pctStr = fmt.Sprintf("%.1f%%", *pct.Raw*100)
+	}
 	// Build base string first
 	var base string
 	switch {
@@ -283,124 +283,124 @@ func formatMarketTime(sec int64, tzName string) string {
 // formatPrice1 renders a price with exactly 1 decimal when raw is available.
 // Falls back to fmt string or "-" if neither present.
 func formatPrice1(n yfapi.YNum) string {
-    if n.Raw != nil {
-        return formatFloatWithCommas(*n.Raw, 1)
-    }
-    if n.Fmt != "" {
-        // If fmt exists but has more decimals, we won't trim to 1; keep as-is.
-        return n.Fmt
-    }
-    return "-"
+	if n.Raw != nil {
+		return formatFloatWithCommas(*n.Raw, 1)
+	}
+	if n.Fmt != "" {
+		// If fmt exists but has more decimals, we won't trim to 1; keep as-is.
+		return n.Fmt
+	}
+	return "-"
 }
 
 // formatMarketCap renders a humanized market cap (e.g., 3.83T) when fmt is missing.
 // Uses 2 decimals for readability. Falls back to fmt or "-" if no data.
 func formatMarketCap(n yfapi.YNum) string {
-    if n.Fmt != "" {
-        return n.Fmt
-    }
-    if n.Raw == nil {
-        return "-"
-    }
-    v := *n.Raw
-    const (
-        K = 1_000
-        M = 1_000_000
-        B = 1_000_000_000
-        T = 1_000_000_000_000
-    )
-    switch {
-    case v >= T:
-        return fmt.Sprintf("%.1fT", v/ T)
-    case v >= B:
-        return fmt.Sprintf("%.1fB", v/ B)
-    case v >= M:
-        return fmt.Sprintf("%.1fM", v/ M)
-    case v >= K:
-        return fmt.Sprintf("%.1fK", v/ K)
-    default:
-        return trimZeros(fmt.Sprintf("%.3f", v))
-    }
+	if n.Fmt != "" {
+		return n.Fmt
+	}
+	if n.Raw == nil {
+		return "-"
+	}
+	v := *n.Raw
+	const (
+		K = 1_000
+		M = 1_000_000
+		B = 1_000_000_000
+		T = 1_000_000_000_000
+	)
+	switch {
+	case v >= T:
+		return fmt.Sprintf("%.1fT", v/T)
+	case v >= B:
+		return fmt.Sprintf("%.1fB", v/B)
+	case v >= M:
+		return fmt.Sprintf("%.1fM", v/M)
+	case v >= K:
+		return fmt.Sprintf("%.1fK", v/K)
+	default:
+		return trimZeros(fmt.Sprintf("%.3f", v))
+	}
 }
 
 // formatChangeAbs renders absolute change with commas and 2 decimals when raw is available.
 func formatChangeAbs(n yfapi.YNum) string {
-    if n.Raw != nil {
-        return formatFloatWithCommas(*n.Raw, 1)
-    }
-    if n.Fmt != "" {
-        return n.Fmt
-    }
-    return "-"
+	if n.Raw != nil {
+		return formatFloatWithCommas(*n.Raw, 1)
+	}
+	if n.Fmt != "" {
+		return n.Fmt
+	}
+	return "-"
 }
 
 // formatFloatWithCommas formats a float with fixed decimals and thousands separators.
 func formatFloatWithCommas(f float64, decimals int) string {
-    // Build base with required precision
-    fmtStr := fmt.Sprintf("%%.%df", decimals)
-    s := fmt.Sprintf(fmtStr, f)
-    // Handle sign
-    sign := ""
-    if strings.HasPrefix(s, "-") {
-        sign = "-"
-        s = s[1:]
-    }
-    // Split integer and fractional parts
-    dot := strings.IndexByte(s, '.')
-    intPart, fracPart := s, ""
-    if dot >= 0 {
-        intPart = s[:dot]
-        fracPart = s[dot:]
-    }
-    return sign + addCommasIntPart(intPart) + fracPart
+	// Build base with required precision
+	fmtStr := fmt.Sprintf("%%.%df", decimals)
+	s := fmt.Sprintf(fmtStr, f)
+	// Handle sign
+	sign := ""
+	if strings.HasPrefix(s, "-") {
+		sign = "-"
+		s = s[1:]
+	}
+	// Split integer and fractional parts
+	dot := strings.IndexByte(s, '.')
+	intPart, fracPart := s, ""
+	if dot >= 0 {
+		intPart = s[:dot]
+		fracPart = s[dot:]
+	}
+	return sign + addCommasIntPart(intPart) + fracPart
 }
 
 // addCommasIntPart inserts commas into an integer numeric string.
 func addCommasIntPart(s string) string {
-    n := len(s)
-    if n <= 3 {
-        return s
-    }
-    // Build from right to left in chunks of 3
-    var b strings.Builder
-    rem := n % 3
-    if rem == 0 {
-        rem = 3
-    }
-    b.WriteString(s[:rem])
-    for i := rem; i < n; i += 3 {
-        b.WriteByte(',')
-        b.WriteString(s[i : i+3])
-    }
-    return b.String()
+	n := len(s)
+	if n <= 3 {
+		return s
+	}
+	// Build from right to left in chunks of 3
+	var b strings.Builder
+	rem := n % 3
+	if rem == 0 {
+		rem = 3
+	}
+	b.WriteString(s[:rem])
+	for i := rem; i < n; i += 3 {
+		b.WriteByte(',')
+		b.WriteString(s[i : i+3])
+	}
+	return b.String()
 }
 
 // changeColumns returns separate formatted strings for absolute change and percent change,
 // colorized based on sign. Percent uses two decimals.
 func changeColumns(ch yfapi.YNum, pct yfapi.YNum) (string, string) {
-    abs := formatChangeAbs(ch)
-    p := pct.Fmt
-    if p == "" && pct.Raw != nil {
-        p = fmt.Sprintf("%.1f%%", *pct.Raw*100)
-    }
-    // Determine sign for coloring
-    var sign float64
-    if ch.Raw != nil {
-        sign = *ch.Raw
-    } else if pct.Raw != nil {
-        sign = *pct.Raw
-    }
-    if sign > 0 {
-        abs = text.Colors{text.FgGreen}.Sprint(abs)
-        p = text.Colors{text.FgGreen}.Sprint(p)
-    } else if sign < 0 {
-        abs = text.Colors{text.FgRed}.Sprint(abs)
-        p = text.Colors{text.FgRed}.Sprint(p)
-    }
-    if p == "" {
-        p = "-"
-    }
-    return abs, p
+	abs := formatChangeAbs(ch)
+	p := pct.Fmt
+	if p == "" && pct.Raw != nil {
+		p = fmt.Sprintf("%.1f%%", *pct.Raw*100)
+	}
+	// Determine sign for coloring
+	var sign float64
+	if ch.Raw != nil {
+		sign = *ch.Raw
+	} else if pct.Raw != nil {
+		sign = *pct.Raw
+	}
+	if sign > 0 {
+		abs = text.Colors{text.FgGreen}.Sprint(abs)
+		p = text.Colors{text.FgGreen}.Sprint(p)
+	} else if sign < 0 {
+		abs = text.Colors{text.FgRed}.Sprint(abs)
+		p = text.Colors{text.FgRed}.Sprint(p)
+	}
+	if p == "" {
+		p = "-"
+	}
+	return abs, p
 }
 
 // quoteToSummaryTyped adapts a v7 Quote into the minimal QuoteSummaryTyped shape

@@ -4,6 +4,7 @@ import (
     "context"
     "fmt"
     "os"
+    "strings"
     "time"
     "yf/pkg/yfapi"
 
@@ -17,30 +18,39 @@ import (
 //
 //	yf qs <symbol> -m price
 //
-// When no symbol is provided, it defaults to 3353.T.
+// Supports multiple symbols via comma-separated input or multiple args.
 var priceCmd = &cobra.Command{
-    Use:   "price [symbol]",
-    Short: "Get price module for a symbol (shorthand for 'qs -m price')",
-    Args:  cobra.MaximumNArgs(1),
+    Use:   "price <symbol...>",
+    Short: "Get price module for one or more symbols (shorthand for 'qs -m price')",
+    Args:  cobra.MinimumNArgs(1),
     RunE: func(cmd *cobra.Command, args []string) error {
-        if len(args) != 1 {
-            return fmt.Errorf("symbol is required unless --list-modules is used")
+        // Support comma-separated symbols and multiple args
+        symbols := parseSymbols(args)
+        if len(symbols) == 0 {
+            return fmt.Errorf("symbol is required")
         }
-        symbol := args[0]
 
         modules := []yfapi.QuoteSummaryModule{yfapi.ModulePrice}
 
         ctx := context.Background()
-        result, err := yfapi.DefaultAPI.QuoteSummaryTyped(ctx, symbol, modules)
-        if err != nil {
-            return err
+        results := make([]yfapi.QuoteSummaryTyped, 0, len(symbols))
+        for _, s := range symbols {
+            r, err := yfapi.DefaultAPI.QuoteSummaryTyped(ctx, s, modules)
+            if err != nil {
+                return err
+            }
+            results = append(results, r)
         }
+
         switch viper.GetString("format") {
         case "json":
-            return printJSON(result, viper.GetBool("pretty"))
+            if len(results) == 1 {
+                return printJSON(results[0], viper.GetBool("pretty"))
+            }
+            return printJSON(results, viper.GetBool("pretty"))
         case "table":
             full, _ := cmd.Flags().GetBool("full")
-            renderPriceTable(os.Stdout, result, full)
+            renderPriceTableMany(os.Stdout, results, full)
             return nil
         default:
             return fmt.Errorf("unsupported format: %s", viper.GetString("format"))
@@ -114,6 +124,71 @@ func renderPriceTable(w *os.File, v yfapi.QuoteSummaryTyped, full bool) {
     }
     t.AppendRow(row)
     t.Render()
+}
+
+// renderPriceTableMany prints a compact table for multiple symbols.
+func renderPriceTableMany(w *os.File, results []yfapi.QuoteSummaryTyped, full bool) {
+    t := table.NewWriter()
+    t.SetOutputMirror(w)
+    t.SetStyle(table.StyleRounded)
+    t.Style().Options.DrawBorder = true
+    t.Style().Options.SeparateRows = false
+    t.Style().Options.SeparateColumns = true
+
+    hdr := table.Row{"Sym", "Price", "Chg (Chg%)", "Prev", "Mkt Cap"}
+    if full {
+        hdr = append(hdr, "Status", "Time")
+    }
+    t.AppendHeader(hdr)
+
+    t.SetColumnConfigs([]table.ColumnConfig{
+        {Name: "Price", Align: text.AlignRight},
+        {Name: "Chg (Chg%)", Align: text.AlignRight},
+        {Name: "Prev", Align: text.AlignRight},
+        {Name: "Mkt Cap", Align: text.AlignRight},
+    })
+
+    for _, v := range results {
+        var (
+            symbol       string
+            price        string
+            change       string
+            prevClose    string
+            marketCap    string
+            marketStatus string
+            dataTimeStr  string
+        )
+        if v.Price != nil {
+            p := v.Price
+            symbol = p.Symbol
+            price = displayY(p.RegularMarketPrice)
+            change = formatChange(p.RegularMarketChange, p.RegularMarketChangePercent)
+            prevClose = displayY(p.RegularMarketPreviousClose)
+            marketCap = displayY(p.MarketCap)
+            marketStatus = p.MarketState
+            dataTimeStr = formatMarketTime(p.RegularMarketTime, p.ExchangeTimezoneName)
+        }
+        row := table.Row{symbol, price, change, prevClose, marketCap}
+        if full {
+            row = append(row, marketStatus, dataTimeStr)
+        }
+        t.AppendRow(row)
+    }
+    t.Render()
+}
+
+// parseSymbols flattens args and comma-separated lists, trimming whitespace.
+func parseSymbols(args []string) []string {
+    out := make([]string, 0, len(args))
+    for _, a := range args {
+        parts := strings.Split(a, ",")
+        for _, p := range parts {
+            if s := strings.TrimSpace(p); s != "" {
+                out = append(out, s)
+            }
+        }
+    }
+    return out
 }
 
 func displayY(n yfapi.YNum) string {

@@ -20,10 +20,10 @@ var priceCmd = &cobra.Command{
 	Short: "Get price module for a symbol (shorthand for 'qs -m price')",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		symbol := "3353.T"
-		if len(args) == 1 {
-			symbol = args[0]
+		if len(args) != 1 {
+			return fmt.Errorf("symbol is required unless --list-modules is used")
 		}
+		symbol := args[0]
 
 		modules := []yfapi.QuoteSummaryModule{yfapi.ModulePrice}
 
@@ -45,5 +45,13 @@ var priceCmd = &cobra.Command{
 }
 
 func init() {
+	// Set a price-only default format when the user hasn't specified one
+	// via CLI flag, env (YF_FORMAT), or config file. This preserves the
+	// global default elsewhere but makes `price` default to table output.
+	priceCmd.PreRun = func(cmd *cobra.Command, args []string) {
+		if !cmd.Flags().Changed("format") && os.Getenv("YF_FORMAT") == "" && !viper.InConfig("format") {
+			viper.Set("format", "table")
+		}
+	}
 	rootCmd.AddCommand(priceCmd)
 }

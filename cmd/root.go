@@ -10,9 +10,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "yf",
-	Short: "yf: Yahoo Finance CLI",
-	Long:  "yf is a CLI to pull data from Yahoo Finance.",
+    Use:   "yf",
+    Short: "yf: Yahoo Finance CLI",
+    Long:  "yf is a CLI to pull data from Yahoo Finance.",
 }
 
 // Execute runs the root command.

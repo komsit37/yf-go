@@ -37,6 +37,8 @@ var priceCmd = &cobra.Command{
         for _, s := range symbols {
             r, err := yfapi.DefaultAPI.QuoteSummaryTyped(ctx, s, modules)
             if err != nil {
+                // Runtime/API error: suppress usage output.
+                cmd.SilenceUsage = true
                 return err
             }
             results = append(results, r)
@@ -45,9 +47,17 @@ var priceCmd = &cobra.Command{
         switch viper.GetString("format") {
         case "json":
             if len(results) == 1 {
-                return printJSON(results[0], viper.GetBool("pretty"))
+                if err := printJSON(results[0], viper.GetBool("pretty")); err != nil {
+                    cmd.SilenceUsage = true
+                    return err
+                }
+                return nil
             }
-            return printJSON(results, viper.GetBool("pretty"))
+            if err := printJSON(results, viper.GetBool("pretty")); err != nil {
+                cmd.SilenceUsage = true
+                return err
+            }
+            return nil
         case "table":
             full, _ := cmd.Flags().GetBool("full")
             renderPriceTableMany(os.Stdout, results, full)

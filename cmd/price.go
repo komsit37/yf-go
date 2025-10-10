@@ -101,69 +101,14 @@ func init() {
 	rootCmd.AddCommand(priceCmd)
 }
 
-// renderPriceTable prints a compact human-readable table for the price module.
-// Columns: symbol, price, change (change%), prev close, market cap, market status, data source time
-func renderPriceTable(w *os.File, v yfapi.QuoteSummaryTyped, full bool) {
-	t := table.NewWriter()
-	t.SetOutputMirror(w)
-	t.SetStyle(table.StyleRounded)
-	t.Style().Options.DrawBorder = true
-	t.Style().Options.SeparateRows = false
-	t.Style().Options.SeparateColumns = true
-
-	hdr := table.Row{"Sym", "Price", "Chg", "Chg%", "Prev", "Mkt Cap"}
-	if full {
-		hdr = append(hdr, "Status", "Time")
-	}
-	t.AppendHeader(hdr)
-
-	var (
-		symbol       string
-		price        string
-		prevClose    string
-		marketCap    string
-		marketStatus string
-		dataTimeStr  string
-	)
-
-	if v.Price != nil {
-		p := v.Price
-		symbol = p.Symbol
-		price = formatPrice1(p.RegularMarketPrice)
-		prevClose = formatPrice1(p.RegularMarketPreviousClose)
-		marketCap = formatMarketCap(p.MarketCap)
-		marketStatus = p.MarketState
-		dataTimeStr = formatMarketTime(p.RegularMarketTime, p.ExchangeTimezoneName)
-	}
-
-	// Align numeric-ish columns to the right
-	cfgs := []table.ColumnConfig{
-		{Name: "Price", Align: text.AlignRight},
-		{Name: "Chg", Align: text.AlignRight},
-		{Name: "Chg%", Align: text.AlignRight},
-		{Name: "Prev", Align: text.AlignRight},
-		{Name: "Mkt Cap", Align: text.AlignRight},
-	}
-	t.SetColumnConfigs(cfgs)
-
-	// Split change columns for better alignment
-	chAbs, chPct := changeColumns(v.Price.RegularMarketChange, v.Price.RegularMarketChangePercent)
-	row := table.Row{symbol, price, chAbs, chPct, prevClose, marketCap}
-	if full {
-		row = append(row, marketStatus, dataTimeStr)
-	}
-	t.AppendRow(row)
-	t.Render()
-}
-
 // renderPriceTableMany prints a compact table for multiple symbols.
 func renderPriceTableMany(w *os.File, results []yfapi.QuoteSummaryTyped, full bool) {
 	t := table.NewWriter()
 	t.SetOutputMirror(w)
-	t.SetStyle(table.StyleRounded)
-	t.Style().Options.DrawBorder = true
+	t.SetStyle(table.StyleColoredDark)
+	t.Style().Options.DrawBorder = false
 	t.Style().Options.SeparateRows = false
-	t.Style().Options.SeparateColumns = true
+	t.Style().Options.SeparateColumns = false
 
 	hdr := table.Row{"Sym", "Price", "Chg", "Chg%", "Prev", "Mkt Cap"}
 	if full {

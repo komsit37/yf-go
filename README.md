@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/komsit37/yf-go/actions/workflows/ci.yml/badge.svg)](https://github.com/komsit37/yf-go/actions/workflows/ci.yml)
 
-Tiny Go CLI for Yahoo Finance data. The CLI parses flags, calls a reusable client exposed by the root module (`github.com/pkomsit/yf-go`), and renders JSON or a table.
+Small Yahoo Finance tool for Go with two uses:
+- CLI `yf` for prices and quote summaries
+- Library `github.com/pkomsit/yf-go` (`yfgo`) for a reusable client
 
 ## Usage
 

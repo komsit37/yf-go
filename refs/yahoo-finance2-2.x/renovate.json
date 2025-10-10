@@ -1,8 +1,0 @@
-{
-  "automerge": true,
-  "extends": ["config:base"],
-  "ignoreDeps": ["circleci/node"],
-  "major": {
-    "automerge": false
-  }
-}

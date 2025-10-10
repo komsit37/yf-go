@@ -4,27 +4,66 @@
 
 Tiny Go CLI for Yahoo Finance data. The CLI parses flags, calls a reusable client exposed by the root module (`github.com/pkomsit/yf-go`), and renders JSON or a table.
 
-## Requirements
-- Go 1.21+
+## Usage
 
-## Build
+### 1. CLI: run the `yf` command for quick queries.
+
+#### Build
 - From source: `go build -o yf ./cmd/yf`
 - With Make: `make build`
 
-## Run
-- Help: `go run ./cmd/yf --help`
-- Built binary help: `./yf --help`
+#### Examples
+- Price (table): `./yf price AAPL,TSLA,NVDA,GOOGL,META,MSFT`
+![Price table screenshot showing multiple symbols](refs/screenshot.png)
 
-## Examples
 - Quote summary (JSON pretty): `./yf qs AAPL -o json --pretty`
-- Quote summary (table): `./yf qs AAPL -o table`
-- List supported modules: `./yf qs --list-modules`
+- Quote summary (table) with modules: `./yf qs AAPL -m assetProfile -o table`
+- List supported [modules](quotesummary_modules.go): `./yf qs --list-modules`
 
-## Configuration
-Uses Viper with `YF_`-prefixed env vars and optional `yf.(yaml|json|toml)` in CWD or a path from `YF_CONFIG`.
-- `YF_FORMAT=table` — default output format
-- `YF_PRETTY=1` — pretty-print JSON
-- `YF_CONFIG=./yf.yaml` — explicit config file path
+### 2. Library: import `github.com/pkomsit/yf-go` (package `yfgo`) in your Go code.
+
+Example (library):
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+
+    "github.com/pkomsit/yf-go"
+)
+
+func main() {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    c := yfgo.NewClient()
+
+    // Example 1: v7 quote for multiple symbols
+    quotes, err := c.Quote(ctx, []string{"AAPL", "TSLA"})
+    if err != nil {
+        panic(err)
+    }
+    for _, q := range quotes {
+        if q.RegularMarketPrice != nil {
+            fmt.Printf("%s: %.2f\n", q.Symbol, *q.RegularMarketPrice)
+        } else {
+            fmt.Printf("%s: n/a\n", q.Symbol)
+        }
+    }
+
+    // Example 2: v10 quoteSummary typed view
+    ts, err := c.QuoteSummaryTyped(ctx, "AAPL", []yfgo.QuoteSummaryModule{yfgo.ModulePrice, yfgo.ModuleSummaryDetail})
+    if err != nil {
+        panic(err)
+    }
+    if ts.Price != nil {
+        fmt.Printf("AAPL prev close: %s\n", ts.Price.RegularMarketPreviousClose.Fmt)
+    }
+}
+```
 
 ## Development
 - Format: `make fmt` (Go’s canonical tabs; enforced by pre-commit and CI)
@@ -36,6 +75,5 @@ Uses Viper with `YF_`-prefixed env vars and optional `yf.(yaml|json|toml)` in CW
 
 ## Project Layout
 - `cmd/yf/main.go` — CLI entrypoint
-- `cmd/` — Cobra commands (CLI only)
 - root package (`github.com/pkomsit/yf-go`) — Yahoo Finance client and types (domain logic)
 - `refs/` — Upstream references/fixtures (not part of the build)

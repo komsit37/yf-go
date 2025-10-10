@@ -6,7 +6,8 @@ import (
 	"os"
 	"strings"
 	"time"
-	"yf/pkg/yfapi"
+
+	yfgo "github.com/pkomsit/yf-go"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -30,29 +31,29 @@ var priceCmd = &cobra.Command{
 			return fmt.Errorf("symbol is required")
 		}
 
-		modules := []yfapi.QuoteSummaryModule{yfapi.ModulePrice}
+		modules := []yfgo.QuoteSummaryModule{yfgo.ModulePrice}
 
 		// arg parsing done, suppress usage on error after this point
 		cmd.SilenceUsage = true
 		ctx := context.Background()
 		api := strings.ToLower(viper.GetString("api"))
-		var results []yfapi.QuoteSummaryTyped
+		var results []yfgo.QuoteSummaryTyped
 		switch api {
 		case "", "quote":
 			// Use v7/finance/quote which supports multiple symbols at once
-			quotes, err := yfapi.DefaultAPI.Quote(ctx, symbols)
+			quotes, err := yfgo.DefaultAPI.Quote(ctx, symbols)
 			if err != nil {
 				return err
 			}
-			results = make([]yfapi.QuoteSummaryTyped, 0, len(quotes))
+			results = make([]yfgo.QuoteSummaryTyped, 0, len(quotes))
 			for _, q := range quotes {
 				results = append(results, quoteToSummaryTyped(q))
 			}
 		case "quotesummary":
 			// Fall back to v10/finance/quoteSummary per-symbol
-			results = make([]yfapi.QuoteSummaryTyped, 0, len(symbols))
+			results = make([]yfgo.QuoteSummaryTyped, 0, len(symbols))
 			for _, s := range symbols {
-				r, err := yfapi.DefaultAPI.QuoteSummaryTyped(ctx, s, modules)
+				r, err := yfgo.DefaultAPI.QuoteSummaryTyped(ctx, s, modules)
 				if err != nil {
 					return err
 				}
@@ -95,14 +96,14 @@ func init() {
 	}
 	// Flag to show full columns (status and time)
 	priceCmd.Flags().Bool("full", false, "Show status and time columns")
-	// API selection: quote (default) supports multiple symbols, or quotesummary
-	priceCmd.Flags().String("api", "quote", "API to use (quote|quotesummary); default quote supports multiple symbols")
+	// API selection: quote supports multiple symbols, or quotesummary
+	priceCmd.Flags().String("api", "quotesummary", "API to use (quote|quotesummary); default quotesummary")
 	_ = viper.BindPFlag("api", priceCmd.Flags().Lookup("api"))
 	rootCmd.AddCommand(priceCmd)
 }
 
 // renderPriceTableMany prints a compact table for multiple symbols.
-func renderPriceTableMany(w *os.File, results []yfapi.QuoteSummaryTyped, full bool) {
+func renderPriceTableMany(w *os.File, results []yfgo.QuoteSummaryTyped, full bool) {
 	t := table.NewWriter()
 	t.SetOutputMirror(w)
 	t.SetStyle(table.StyleColoredDark)
@@ -166,7 +167,7 @@ func parseSymbols(args []string) []string {
 	return out
 }
 
-func displayY(n yfapi.YNum) string {
+func displayY(n yfgo.YNum) string {
 	if n.Fmt != "" {
 		return n.Fmt
 	}
@@ -176,7 +177,7 @@ func displayY(n yfapi.YNum) string {
 	return "-"
 }
 
-func formatChange(ch yfapi.YNum, pct yfapi.YNum) string {
+func formatChange(ch yfgo.YNum, pct yfgo.YNum) string {
 	// Absolute change with thousands separator
 	chStr := formatChangeAbs(ch)
 	// pct.Fmt usually includes the percent sign; if missing, format.
@@ -227,7 +228,7 @@ func formatMarketTime(sec int64, tzName string) string {
 
 // formatPrice1 renders a price with exactly 1 decimal when raw is available.
 // Falls back to fmt string or "-" if neither present.
-func formatPrice1(n yfapi.YNum) string {
+func formatPrice1(n yfgo.YNum) string {
 	if n.Raw != nil {
 		return formatFloatWithCommas(*n.Raw, 1)
 	}
@@ -240,7 +241,7 @@ func formatPrice1(n yfapi.YNum) string {
 
 // formatMarketCap renders a humanized market cap (e.g., 3.83T) when fmt is missing.
 // Uses 2 decimals for readability. Falls back to fmt or "-" if no data.
-func formatMarketCap(n yfapi.YNum) string {
+func formatMarketCap(n yfgo.YNum) string {
 	if n.Fmt != "" {
 		return n.Fmt
 	}
@@ -269,7 +270,7 @@ func formatMarketCap(n yfapi.YNum) string {
 }
 
 // formatChangeAbs renders absolute change with commas and 2 decimals when raw is available.
-func formatChangeAbs(n yfapi.YNum) string {
+func formatChangeAbs(n yfgo.YNum) string {
 	if n.Raw != nil {
 		return formatFloatWithCommas(*n.Raw, 1)
 	}
@@ -322,7 +323,7 @@ func addCommasIntPart(s string) string {
 
 // changeColumns returns separate formatted strings for absolute change and percent change,
 // colorized based on sign. Percent uses two decimals.
-func changeColumns(ch yfapi.YNum, pct yfapi.YNum) (string, string) {
+func changeColumns(ch yfgo.YNum, pct yfgo.YNum) (string, string) {
 	abs := formatChangeAbs(ch)
 	p := pct.Fmt
 	if p == "" && pct.Raw != nil {
@@ -350,33 +351,33 @@ func changeColumns(ch yfapi.YNum, pct yfapi.YNum) (string, string) {
 
 // quoteToSummaryTyped adapts a v7 Quote into the minimal QuoteSummaryTyped shape
 // expected by the price table renderer (i.e., populating only Price module fields used).
-func quoteToSummaryTyped(q yfapi.Quote) yfapi.QuoteSummaryTyped {
+func quoteToSummaryTyped(q yfgo.Quote) yfgo.QuoteSummaryTyped {
 	// helper to build a YNum from *float64
-	ynf := func(p *float64) yfapi.YNum {
+	ynf := func(p *float64) yfgo.YNum {
 		if p == nil {
-			return yfapi.YNum{}
+			return yfgo.YNum{}
 		}
-		return yfapi.YNum{Raw: p}
+		return yfgo.YNum{Raw: p}
 	}
 	// helper to build a YNum from *int64
-	yni := func(p *int64) yfapi.YNum {
+	yni := func(p *int64) yfgo.YNum {
 		if p == nil {
-			return yfapi.YNum{}
+			return yfgo.YNum{}
 		}
 		f := float64(*p)
-		return yfapi.YNum{Raw: &f}
+		return yfgo.YNum{Raw: &f}
 	}
 	// helper for percent values coming from quote API where the numeric
 	// value is already a percent (e.g., 0.87 for 0.87%). Convert to fraction.
-	ynPercent := func(p *float64) yfapi.YNum {
+	ynPercent := func(p *float64) yfgo.YNum {
 		if p == nil {
-			return yfapi.YNum{}
+			return yfgo.YNum{}
 		}
 		f := *p / 100.0
-		return yfapi.YNum{Raw: &f}
+		return yfgo.YNum{Raw: &f}
 	}
 
-	pm := &yfapi.PriceModule{
+	pm := &yfgo.PriceModule{
 		Symbol:                     q.Symbol,
 		ShortName:                  q.ShortName,
 		LongName:                   q.LongName,
@@ -394,5 +395,5 @@ func quoteToSummaryTyped(q yfapi.Quote) yfapi.QuoteSummaryTyped {
 		TrailingPE:                 ynf(q.TrailingPE),
 		RegularMarketPreviousClose: ynf(q.RegularMarketPreviousClose),
 	}
-	return yfapi.QuoteSummaryTyped{Price: pm}
+	return yfgo.QuoteSummaryTyped{Price: pm}
 }

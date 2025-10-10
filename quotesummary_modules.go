@@ -1,4 +1,4 @@
-package yfapi
+package yfgo
 
 import "strings"
 

@@ -1,7 +1,7 @@
 // Yahoo Finance v7 quote operations.
 // Endpoint: https://query1.finance.yahoo.com/v7/finance/quote
 // Supports fetching multiple symbols via the `symbols` query parameter.
-package yfapi
+package yfgo
 
 import (
 	"context"

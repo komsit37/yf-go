@@ -1,7 +1,7 @@
 // Yahoo Finance v10 quoteSummary operations.
 // Endpoint: https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}
 // Supports modules via the `modules` query parameter and requires a valid crumb.
-package yfapi
+package yfgo
 
 import (
 	"context"

@@ -6,7 +6,8 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"yf/pkg/yfapi"
+
+	yfgo "github.com/pkomsit/yf-go"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,8 +22,8 @@ var qsCmd = &cobra.Command{
 		// If listing modules, print and exit early
 		if viper.GetBool("list-modules") {
 			// Build canonical module names from typed list
-			names := make([]string, 0, len(yfapi.AllowedQuoteSummaryModules))
-			for _, m := range yfapi.AllowedQuoteSummaryModules {
+			names := make([]string, 0, len(yfgo.AllowedQuoteSummaryModules))
+			for _, m := range yfgo.AllowedQuoteSummaryModules {
 				names = append(names, m.String())
 			}
 			sort.Strings(names)
@@ -51,7 +52,7 @@ var qsCmd = &cobra.Command{
 		ctx := context.Background()
 		results := make([]any, 0, len(symbols))
 		for _, sym := range symbols {
-			res, err := yfapi.DefaultAPI.QuoteSummary(ctx, sym, typedMods)
+			res, err := yfgo.DefaultAPI.QuoteSummary(ctx, sym, typedMods)
 			if err != nil {
 				// Runtime/API error: suppress usage output.
 				return err
@@ -90,7 +91,7 @@ var qsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(qsCmd)
 	// Add modules flag supporting repeats or comma separated values
-	qsCmd.Flags().StringSliceP("modules", "m", yfapi.ModulesToStrings(yfapi.DefaultQuoteSummaryModules), "QuoteSummary modules (repeat or comma-separated). Use --modules multiple times or a,b,c")
+	qsCmd.Flags().StringSliceP("modules", "m", yfgo.ModulesToStrings(yfgo.DefaultQuoteSummaryModules), "QuoteSummary modules (repeat or comma-separated). Use --modules multiple times or a,b,c")
 	_ = viper.BindPFlag("modules", qsCmd.Flags().Lookup("modules"))
 	// Add list-modules flag to print supported modules and exit without a symbol
 	qsCmd.Flags().Bool("list-modules", false, "List supported quoteSummary modules and exit")
@@ -98,11 +99,11 @@ func init() {
 }
 
 // validateModules ensures all requested modules are supported; returns a helpful error otherwise.
-func parseAndValidateModules(requested []string) ([]yfapi.QuoteSummaryModule, error) {
-	var out []yfapi.QuoteSummaryModule
+func parseAndValidateModules(requested []string) ([]yfgo.QuoteSummaryModule, error) {
+	var out []yfgo.QuoteSummaryModule
 	var invalid []string
 	for _, r := range requested {
-		if m, ok := yfapi.ParseQuoteSummaryModule(r); ok {
+		if m, ok := yfgo.ParseQuoteSummaryModule(r); ok {
 			out = append(out, m)
 		} else {
 			invalid = append(invalid, r)
@@ -112,8 +113,8 @@ func parseAndValidateModules(requested []string) ([]yfapi.QuoteSummaryModule, er
 		return out, nil
 	}
 	// Build allowed canonical names for the error message
-	allowed := make([]string, 0, len(yfapi.AllowedQuoteSummaryModules))
-	for _, m := range yfapi.AllowedQuoteSummaryModules {
+	allowed := make([]string, 0, len(yfgo.AllowedQuoteSummaryModules))
+	for _, m := range yfgo.AllowedQuoteSummaryModules {
 		allowed = append(allowed, m.String())
 	}
 	sort.Strings(allowed)
@@ -123,7 +124,7 @@ func parseAndValidateModules(requested []string) ([]yfapi.QuoteSummaryModule, er
 // resolveModules converts raw module strings into typed modules.
 // It supports comma-separated values, trims whitespace, and falls back to
 // defaults when the provided slice is empty.
-func resolveModules(raw []string) ([]yfapi.QuoteSummaryModule, error) {
+func resolveModules(raw []string) ([]yfgo.QuoteSummaryModule, error) {
 	// Flatten any comma-separated entries
 	var requested []string
 	for _, item := range raw {
@@ -135,14 +136,14 @@ func resolveModules(raw []string) ([]yfapi.QuoteSummaryModule, error) {
 	}
 	if len(requested) == 0 {
 		// Use typed defaults directly
-		return append([]yfapi.QuoteSummaryModule(nil), yfapi.DefaultQuoteSummaryModules...), nil
+		return append([]yfgo.QuoteSummaryModule(nil), yfgo.DefaultQuoteSummaryModules...), nil
 	}
 	return parseAndValidateModules(requested)
 }
 
 // ---- Rendering (table) ----
 
-// Render helpers are CLI concerns; types are from yfapi.
+// Render helpers are CLI concerns; types are from the root package.
 // ---- Generic rendering (table output) ----
 
 // renderSummary prints the untyped quoteSummary result in a human-friendly, generic form.

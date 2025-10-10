@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"yf/cmd"
+	"github.com/pkomsit/yf-go/cmd"
 )
 
 func main() {

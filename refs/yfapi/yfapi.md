@@ -4,8 +4,8 @@ This document explains how this repository interacts with Yahoo Finance’s unof
 
 ## Overview
 
-- Primary module: `pkg/yfapi` (reusable client and types)
-- Main flow: CLI (`cmd/`) parses flags → calls `pkg/yfapi` → renders JSON/table
+- Primary module: root package `github.com/pkomsit/yf-go` (package name `yfgo`) — reusable client and types
+- Main flow: CLI (`cmd/`) parses flags → calls `yfgo` → renders JSON/table
 - Focused endpoint: `quoteSummary` (v10)
 - Session model: cookie jar + “crumb” token
 
@@ -39,9 +39,9 @@ Notes
 
 ## Modules
 
-`quoteSummary` supports many sub‑modules; this project exposes them via `pkg/yfapi.AllowedQuoteSummaryModules` (e.g., `price`, `summaryDetail`, `financialData`, `assetProfile`, etc.).
+`quoteSummary` supports many sub‑modules; this project exposes them via `yfgo.AllowedQuoteSummaryModules` (e.g., `price`, `summaryDetail`, `financialData`, `assetProfile`, etc.).
 
-Defaults used by table output (`pkg/yfapi.DefaultQuoteSummaryModules`):
+Defaults used by table output (`yfgo.DefaultQuoteSummaryModules`):
 
 - `price`
 - `summaryDetail`
@@ -115,14 +115,14 @@ curl -s 'https://query1.finance.yahoo.com/v10/finance/quoteSummary/AAPL?modules=
   -b cookies.txt
 ```
 
-In this project, these steps are handled automatically by `pkg/yfapi.Client`.
+In this project, these steps are handled automatically by `yfgo.Client`.
 
 ## Library Entry Points
 
-- Interface: `pkg/yfapi.API`
+- Interface: `yfgo.API`
   - `QuoteSummary(ctx, symbol, modules) (any, error)`
   - `QuoteSummaryTyped(ctx, symbol, modules) (QuoteSummaryTyped, error)`
-- Default client: `pkg/yfapi.DefaultAPI`
+- Default client: `yfgo.DefaultAPI`
 - Convenience helpers:
   - `FetchQuoteSummary(ctx, symbol, modules)`
   - `FetchQuoteSummaryTyped(ctx, symbol, modules)`
@@ -136,4 +136,3 @@ In this project, these steps are handled automatically by `pkg/yfapi.Client`.
 ## Security & Terms
 
 This client uses undocumented endpoints intended for Yahoo’s own web apps. Usage may be rate‑limited or blocked. Do not include secrets, and avoid abusive traffic. Respect Yahoo’s terms in your environment.
-

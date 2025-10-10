@@ -3,10 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"yf/pkg/yfapi"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	yfgo "github.com/pkomsit/yf-go"
 )
 
 // quoteCmd uses Yahoo Finance v7/finance/quote API to fetch quotes.
@@ -26,7 +27,7 @@ var quoteCmd = &cobra.Command{
 		// Actual runtime error: suppress usage output.
 		cmd.SilenceUsage = true
 		ctx := context.Background()
-		quotes, err := yfapi.DefaultAPI.Quote(ctx, symbols)
+		quotes, err := yfgo.DefaultAPI.Quote(ctx, symbols)
 		if err != nil {
 			return err
 		}

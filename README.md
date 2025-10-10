@@ -2,17 +2,17 @@
 
 [![CI](https://github.com/komsit37/yf-go/actions/workflows/ci.yml/badge.svg)](https://github.com/komsit37/yf-go/actions/workflows/ci.yml)
 
-Tiny Go CLI for Yahoo Finance data. The CLI parses flags, calls a reusable client in `pkg/yfapi`, and renders JSON or a table.
+Tiny Go CLI for Yahoo Finance data. The CLI parses flags, calls a reusable client exposed by the root module (`github.com/pkomsit/yf-go`), and renders JSON or a table.
 
 ## Requirements
 - Go 1.21+
 
 ## Build
-- From source: `go build -o yf .`
+- From source: `go build -o yf ./cmd/yf`
 - With Make: `make build`
 
 ## Run
-- Help: `go run . --help`
+- Help: `go run ./cmd/yf --help`
 - Built binary help: `./yf --help`
 
 ## Examples
@@ -35,8 +35,7 @@ Uses Viper with `YF_`-prefixed env vars and optional `yf.(yaml|json|toml)` in CW
   - `git config core.hooksPath .githooks && chmod +x .githooks/pre-commit`
 
 ## Project Layout
-- `main.go` — CLI entrypoint
+- `cmd/yf/main.go` — CLI entrypoint
 - `cmd/` — Cobra commands (CLI only)
-- `pkg/yfapi/` — Yahoo Finance client and types (domain logic)
+- root package (`github.com/pkomsit/yf-go`) — Yahoo Finance client and types (domain logic)
 - `refs/` — Upstream references/fixtures (not part of the build)
-

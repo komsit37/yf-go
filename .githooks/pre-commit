@@ -1,32 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[pre-commit] go fmt..."
-go fmt ./... >/dev/null
+echo "[pre-commit] make check..."
 
-echo "[pre-commit] checking formatting..."
-dirty=$(gofmt -l $(git ls-files '*.go') || true)
-if [[ -n "$dirty" ]]; then
-  echo "[pre-commit] The following files are not formatted:" >&2
-  echo "$dirty" | sed 's/^/  - /' >&2
-  echo "[pre-commit] Run: make fmt" >&2
+if ! command -v make >/dev/null 2>&1; then
+  echo "[pre-commit] make not found; please install it" >&2
   exit 1
 fi
 
-echo "[pre-commit] checking goimports..."
-if command -v goimports >/dev/null 2>&1; then
-  imports_dirty=$(goimports -l $(git ls-files '*.go') || true)
-  if [[ -n "$imports_dirty" ]]; then
-    echo "[pre-commit] The following files need goimports (imports formatting):" >&2
-    echo "$imports_dirty" | sed 's/^/  - /' >&2
-    echo "[pre-commit] Run: make imports" >&2
-    exit 1
-  fi
-else
-  echo "[pre-commit] goimports not installed; skipping imports check"
-fi
-
-echo "[pre-commit] go vet..."
-go vet ./...
+# Reuse project Makefile (fmt/imports/vet with local GOCACHE)
+make check
 
 echo "[pre-commit] OK"

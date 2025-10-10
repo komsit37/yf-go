@@ -1,4 +1,4 @@
-package yfapi
+package yfgo
 
 // YNum mirrors Yahoo's number objects which commonly contain raw/fmt/longFmt.
 type YNum struct {

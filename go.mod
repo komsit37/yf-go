@@ -1,4 +1,4 @@
-module yf
+module github.com/pkomsit/yf-go
 
 go 1.21
 

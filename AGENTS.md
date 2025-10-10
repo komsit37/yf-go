@@ -3,7 +3,7 @@
 ## Project Structure & Modules
 - `cmd/yf/main.go`: CLI entrypoint.
 - `cmd/`: Cobra commands (`root.go`, `qs.go`, `price.go`, `quote.go`). CLI concerns only.
-- Root package (`github.com/pkomsit/yf-go`, package name `yfgo`): Yahoo Finance client and types. Reusable, testable logic.
+- Root package (`github.com/komsit37/yf-go`, package name `yfgo`): Yahoo Finance client and types. Reusable, testable logic.
 - `refs/`: Upstream references and fixtures (not part of the build).
 - `yf`: Built binary (ignored in Git ideally).
 

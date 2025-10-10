@@ -24,7 +24,7 @@ imports:
 		echo "goimports not installed. Install: go install golang.org/x/tools/cmd/goimports@latest"; \
 		exit 1; \
 	}
-	goimports -w -local github.com/pkomsit/yf-go .
+	goimports -w -local github.com/komsit37/yf-go .
 
 importscheck:
 	@if command -v goimports >/dev/null 2>&1; then \

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	yfgo "github.com/pkomsit/yf-go"
+	yfgo "github.com/komsit37/yf-go"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

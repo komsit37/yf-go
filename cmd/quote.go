@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	yfgo "github.com/pkomsit/yf-go"
+	yfgo "github.com/komsit37/yf-go"
 )
 
 // quoteCmd uses Yahoo Finance v7/finance/quote API to fetch quotes.

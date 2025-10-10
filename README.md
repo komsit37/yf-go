@@ -4,7 +4,7 @@
 
 Small Yahoo Finance tool for Go with two uses:
 - CLI `yf` for prices and quote summaries
-- Library `github.com/pkomsit/yf-go` (`yfgo`) for a reusable client
+- Library `github.com/komsit37/yf-go` (`yfgo`) for a reusable client
 
 ## Usage
 
@@ -22,7 +22,7 @@ Small Yahoo Finance tool for Go with two uses:
 - Quote summary (table) with modules: `./yf qs AAPL -m assetProfile -o table`
 - List supported [modules](quotesummary_modules.go): `./yf qs --list-modules`
 
-### 2. Library: import `github.com/pkomsit/yf-go` (package `yfgo`) in your Go code.
+### 2. Library: import `github.com/komsit37/yf-go` (package `yfgo`) in your Go code.
 
 Example (library):
 
@@ -34,7 +34,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/pkomsit/yf-go"
+    "github.com/komsit37/yf-go"
 )
 
 func main() {
@@ -77,5 +77,5 @@ func main() {
 
 ## Project Layout
 - `cmd/yf/main.go` — CLI entrypoint
-- root package (`github.com/pkomsit/yf-go`) — Yahoo Finance client and types (domain logic)
+- root package (`github.com/komsit37/yf-go`) — Yahoo Finance client and types (domain logic)
 - `refs/` — Upstream references/fixtures (not part of the build)

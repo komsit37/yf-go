@@ -4,7 +4,7 @@ This document explains how this repository interacts with Yahoo Finance’s unof
 
 ## Overview
 
-- Primary module: root package `github.com/pkomsit/yf-go` (package name `yfgo`) — reusable client and types
+- Primary module: root package `github.com/komsit37/yf-go` (package name `yfgo`) — reusable client and types
 - Main flow: CLI (`cmd/`) parses flags → calls `yfgo` → renders JSON/table
 - Focused endpoint: `quoteSummary` (v10)
 - Session model: cookie jar + “crumb” token

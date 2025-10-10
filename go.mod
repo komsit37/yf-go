@@ -1,4 +1,4 @@
-module github.com/pkomsit/yf-go
+module github.com/komsit37/yf-go
 
 go 1.21
 

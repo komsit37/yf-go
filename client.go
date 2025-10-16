@@ -32,6 +32,14 @@ type API interface {
 	// Quote calls the v7/finance/quote endpoint for one or more symbols and
 	// returns the parsed list of quotes (quoteResponse.result).
 	Quote(ctx context.Context, symbols []string) ([]Quote, error)
+
+	// Chart fetches time-series price data via the v8/finance/chart endpoint.
+	// The returned value mirrors Yahoo's JSON payload (chart.result[0]).
+	Chart(ctx context.Context, symbol string, opts ChartOptions) (any, error)
+
+	// ChartTyped normalizes chart responses into a typed structure. It defaults
+	// to Yahoo's "object" return format to provide timestamps + indicators.
+	ChartTyped(ctx context.Context, symbol string, opts ChartOptions) (ChartResult, error)
 }
 
 // NewClient creates a Yahoo Finance client with cookie jar and timeout.

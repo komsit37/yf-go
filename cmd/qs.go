@@ -17,7 +17,19 @@ import (
 var qsCmd = &cobra.Command{
 	Use:   "qs <symbol...>",
 	Short: "Get quote summary for one or more symbols",
-	Args:  cobra.MinimumNArgs(1),
+	Args: func(cmd *cobra.Command, args []string) error {
+		listModules, err := cmd.Flags().GetBool("list-modules")
+		if err != nil {
+			return err
+		}
+		if listModules {
+			return nil
+		}
+		if len(args) == 0 {
+			return fmt.Errorf("requires at least 1 arg(s), only received 0 (or use --list-modules)")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If listing modules, print and exit early
 		if viper.GetBool("list-modules") {

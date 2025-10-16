@@ -52,10 +52,18 @@ var qsCmd = &cobra.Command{
 		}
 
 		// Resolve modules from flags/env, supporting comma-separated values and aliases
-		typedMods, err := resolveModules(viper.GetStringSlice("modules"))
-		if err != nil {
-			// Argument/config error: allow usage to show.
-			return err
+		var (
+			typedMods []yfgo.QuoteSummaryModule
+			err       error
+		)
+		if viper.GetBool("all-modules") {
+			typedMods = append([]yfgo.QuoteSummaryModule(nil), yfgo.AllowedQuoteSummaryModules...)
+		} else {
+			typedMods, err = resolveModules(viper.GetStringSlice("modules"))
+			if err != nil {
+				// Argument/config error: allow usage to show.
+				return err
+			}
 		}
 
 		// arg parsing done, suppress usage on error after this point
@@ -108,6 +116,8 @@ func init() {
 	// Add list-modules flag to print supported modules and exit without a symbol
 	qsCmd.Flags().Bool("list-modules", false, "List supported quoteSummary modules and exit")
 	_ = viper.BindPFlag("list-modules", qsCmd.Flags().Lookup("list-modules"))
+	qsCmd.Flags().Bool("all-modules", false, "Request all supported quoteSummary modules")
+	_ = viper.BindPFlag("all-modules", qsCmd.Flags().Lookup("all-modules"))
 }
 
 // validateModules ensures all requested modules are supported; returns a helpful error otherwise.

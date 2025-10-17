@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -35,7 +34,7 @@ var priceCmd = &cobra.Command{
 
 		// arg parsing done, suppress usage on error after this point
 		cmd.SilenceUsage = true
-		ctx := context.Background()
+		ctx := requestContext(cmd)
 		api := strings.ToLower(viper.GetString("api"))
 		var results []yfgo.QuoteSummaryTyped
 		switch api {

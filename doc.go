@@ -14,4 +14,9 @@
 // The v7 quote endpoint can fetch multiple symbols at once:
 //
 //	quotes, err := yfgo.DefaultAPI.Quote(ctx, []string{"AAPL", "MSFT"})
+//
+// Chart data is also supported via the v8/finance/chart endpoint:
+//
+//	series, err := yfgo.DefaultAPI.Chart(ctx, "AAPL", yfgo.ChartOptions{Range: "5d", Interval: "1h"})
+//	typed, err := yfgo.DefaultAPI.ChartTyped(ctx, "AAPL", yfgo.ChartOptions{Range: "5d", Interval: "1h"})
 package yfgo

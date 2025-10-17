@@ -53,6 +53,7 @@ func (c *Client) ensureCrumb(ctx context.Context) error {
 		return errors.New("empty crumb")
 	}
 	c.crumb = crumb
+	c.saveState()
 	return nil
 }
 

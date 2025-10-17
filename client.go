@@ -13,6 +13,7 @@ import (
 type Client struct {
 	http  *http.Client
 	crumb string
+	store *clientStore
 	// sessionWarmed indicates we've attempted to prime cookies to reduce 401s.
 	sessionWarmed bool
 }
@@ -45,12 +46,14 @@ type API interface {
 // NewClient creates a Yahoo Finance client with cookie jar and timeout.
 func NewClient() *Client {
 	jar, _ := cookiejar.New(nil)
-	return &Client{
+	c := &Client{
 		http: &http.Client{
 			Timeout: 15 * time.Second,
 			Jar:     jar,
 		},
 	}
+	c.initStore()
+	return c
 }
 
 // Default is a package-level default client.
@@ -96,6 +99,16 @@ func (c *Client) ensureSession(ctx context.Context) {
 		resp.Body.Close()
 	}
 	c.sessionWarmed = true
+}
+
+// resetSession discards cached cookies, crumb, and session state so the client
+// can establish a fresh session on the next request.
+func (c *Client) resetSession() {
+	jar, _ := cookiejar.New(nil)
+	c.http.Jar = jar
+	c.crumb = ""
+	c.sessionWarmed = false
+	c.clearState()
 }
 
 // jsonUnmarshal is a tiny wrapper to avoid importing encoding/json in two files.

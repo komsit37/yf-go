@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 )
 
@@ -41,67 +40,21 @@ func (c *Client) Chart(ctx context.Context, symbol string, opts ChartOptions) (a
 	if symbol == "" {
 		return nil, fmt.Errorf("symbol is required")
 	}
+	reqOpts := requestOptionsFromContext(ctx)
+	key := cacheKeyChart(symbol, opts)
+	if !reqOpts.forceRefresh {
+		if payload, ok := c.cacheGet(ctx, key, reqOpts); ok {
+			var cached any
+			if err := jsonUnmarshal(payload, &cached); err == nil {
+				return cached, nil
+			}
+			c.cacheDelete(ctx, key)
+		}
+	}
 	c.ensureSession(ctx)
 
 	base := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", url.PathEscape(symbol))
-	q := url.Values{}
-	for k, vals := range opts.AdditionalQuery {
-		for _, v := range vals {
-			q.Add(k, v)
-		}
-	}
-
-	if opts.Interval != "" {
-		q.Set("interval", opts.Interval)
-	}
-	if opts.Range != "" {
-		q.Set("range", opts.Range)
-	}
-	if opts.Period1 != nil {
-		q.Set("period1", strconv.FormatInt(*opts.Period1, 10))
-	}
-	if opts.Period2 != nil {
-		q.Set("period2", strconv.FormatInt(*opts.Period2, 10))
-	}
-	if opts.IncludePrePost != nil {
-		q.Set("includePrePost", strconv.FormatBool(*opts.IncludePrePost))
-	}
-	if opts.Events != "" {
-		q.Set("events", opts.Events)
-	}
-	if opts.Lang != "" {
-		q.Set("lang", opts.Lang)
-	}
-	if opts.UseYfid != nil {
-		q.Set("useYfid", strconv.FormatBool(*opts.UseYfid))
-	}
-	if opts.ReturnType != "" {
-		q.Set("return", opts.ReturnType)
-	}
-
-	// Apply defaults when options omitted.
-	if _, ok := q["interval"]; !ok {
-		q.Set("interval", "1d")
-	}
-	if _, ok := q["events"]; !ok {
-		q.Set("events", "div|split|earn")
-	}
-	if _, ok := q["lang"]; !ok {
-		q.Set("lang", "en-US")
-	}
-	if _, ok := q["return"]; !ok {
-		q.Set("return", "array")
-	}
-	if _, ok := q["includePrePost"]; !ok {
-		q.Set("includePrePost", "true")
-	}
-	if _, ok := q["useYfid"]; !ok {
-		q.Set("useYfid", "true")
-	}
-	// Yahoo requires either range or period1.
-	if _, hasRange := q["range"]; !hasRange && opts.Period1 == nil {
-		q.Set("range", "1mo")
-	}
+	q := buildChartQuery(opts)
 
 	// Attach crumb best-effort; many responses work without it but this improves reliability.
 	if c.crumb == "" {
@@ -130,7 +83,12 @@ func (c *Client) Chart(ctx context.Context, symbol string, opts ChartOptions) (a
 					defer resp2.Body.Close()
 					body2, _ := io.ReadAll(io.LimitReader(resp2.Body, 1<<20))
 					if resp2.StatusCode >= 200 && resp2.StatusCode < 300 {
-						return decodeChart(body2)
+						result, err := decodeChart(body2)
+						if err != nil {
+							return nil, err
+						}
+						c.cacheStoreValue(ctx, key, reqOpts, result)
+						return result, nil
 					}
 					return nil, fmt.Errorf("yahoo finance error: %s: %s", resp2.Status, strings.TrimSpace(string(body2)))
 				}
@@ -138,7 +96,12 @@ func (c *Client) Chart(ctx context.Context, symbol string, opts ChartOptions) (a
 		}
 		return nil, fmt.Errorf("yahoo finance error: %s: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
-	return decodeChart(body)
+	result, err := decodeChart(body)
+	if err != nil {
+		return nil, err
+	}
+	c.cacheStoreValue(ctx, key, reqOpts, result)
+	return result, nil
 }
 
 func decodeChart(body []byte) (any, error) {

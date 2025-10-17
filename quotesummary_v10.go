@@ -59,6 +59,18 @@ func (c *Client) ensureCrumb(ctx context.Context) error {
 
 // QuoteSummary calls the Yahoo Finance quoteSummary endpoint.
 func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []QuoteSummaryModule) (any, error) {
+	reqOpts := requestOptionsFromContext(ctx)
+	key := cacheKeyQuoteSummary(symbol, modules)
+	if !reqOpts.forceRefresh {
+		if payload, ok := c.cacheGet(ctx, key, reqOpts); ok {
+			var cached any
+			if err := jsonUnmarshal(payload, &cached); err == nil {
+				return cached, nil
+			}
+			c.cacheDelete(ctx, key)
+		}
+	}
+
 	if err := c.ensureCrumb(ctx); err != nil {
 		return nil, err
 	}
@@ -74,6 +86,7 @@ func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []Quot
 	// First attempt
 	result, status, body, err := c.callQuoteSummary(ctx, u)
 	if err == nil {
+		c.cacheStoreValue(ctx, key, reqOpts, result)
 		return result, nil
 	}
 	// If unauthorized/invalid crumb, refresh once and retry
@@ -84,14 +97,14 @@ func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []Quot
 		}
 		q.Set("crumb", c.crumb)
 		u = base + "?" + q.Encode()
-		return c.retryQuoteSummary(ctx, u)
+		result, _, _, err = c.callQuoteSummary(ctx, u)
+		if err != nil {
+			return nil, err
+		}
+		c.cacheStoreValue(ctx, key, reqOpts, result)
+		return result, nil
 	}
 	return nil, err
-}
-
-func (c *Client) retryQuoteSummary(ctx context.Context, u string) (any, error) {
-	result, _, _, err := c.callQuoteSummary(ctx, u)
-	return result, err
 }
 
 func (c *Client) callQuoteSummary(ctx context.Context, u string) (any, int, string, error) {

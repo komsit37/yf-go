@@ -26,6 +26,18 @@ func (c *Client) Quote(ctx context.Context, symbols []string) ([]Quote, error) {
 	if len(symbols) == 0 {
 		return nil, fmt.Errorf("no symbols provided")
 	}
+	reqOpts := requestOptionsFromContext(ctx)
+	key := cacheKeyQuote(symbols)
+	if !reqOpts.forceRefresh {
+		if payload, ok := c.cacheGet(ctx, key, reqOpts); ok {
+			var cached []Quote
+			if err := jsonUnmarshal(payload, &cached); err == nil {
+				return cached, nil
+			}
+			c.cacheDelete(ctx, key)
+		}
+	}
+
 	// Warm cookies and obtain crumb to reduce Unauthorized responses.
 	c.ensureSession(ctx)
 	// Obtain crumb as some environments require it even for v7.
@@ -75,6 +87,7 @@ func (c *Client) Quote(ctx context.Context, symbols []string) ([]Quote, error) {
 					if env.QuoteResponse.Error != nil {
 						return nil, fmt.Errorf("quote error: %v", env.QuoteResponse.Error)
 					}
+					c.cacheStoreValue(ctx, key, reqOpts, env.QuoteResponse.Result)
 					return env.QuoteResponse.Result, nil
 				}
 				return nil, fmt.Errorf("yahoo finance error: %s: %s", resp2.Status, strings.TrimSpace(string(b2)))
@@ -90,5 +103,6 @@ func (c *Client) Quote(ctx context.Context, symbols []string) ([]Quote, error) {
 	if env.QuoteResponse.Error != nil {
 		return nil, fmt.Errorf("quote error: %v", env.QuoteResponse.Error)
 	}
+	c.cacheStoreValue(ctx, key, reqOpts, env.QuoteResponse.Result)
 	return env.QuoteResponse.Result, nil
 }

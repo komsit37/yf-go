@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sort"
@@ -69,7 +68,7 @@ var qsCmd = &cobra.Command{
 		// arg parsing done, suppress usage on error after this point
 		cmd.SilenceUsage = true
 		// Fetch data per symbol
-		ctx := context.Background()
+		ctx := requestContext(cmd)
 		results := make([]any, 0, len(symbols))
 		for _, sym := range symbols {
 			res, err := yfgo.DefaultAPI.QuoteSummary(ctx, sym, typedMods)

@@ -26,6 +26,15 @@ Small Yahoo Finance tool for Go with two uses:
 
 For typed access in Go code you can use `ChartTyped` for normalized time-series data.
 
+#### Caching
+
+The CLI caches Yahoo Finance responses by default for five minutes, writing entries to `$YF_HOME/cache` (or `~/.yf/cache` when `YF_HOME` is unset). Control this behaviour with flags or environment variables:
+
+- `--cache-ttl` / `YF_CACHE_TTL` (duration, e.g. `30s`, `5m`) — set to `0` to disable caching.
+- `--cache-dir` / `YF_CACHE_DIR` — override the cache directory (defaults to `$YF_HOME/cache`).
+- `--force-refresh` / `YF_FORCE_REFRESH` — bypass the cache read but refresh the stored value.
+- `--no-cache` / `YF_NO_CACHE` — bypass reads and writes entirely for the invocation.
+
 ### 2. Library: import `github.com/komsit37/yf-go` (package `yfgo`) in your Go code.
 
 Example (library):
@@ -69,6 +78,32 @@ func main() {
         fmt.Printf("AAPL prev close: %s\n", ts.Price.RegularMarketPreviousClose.Fmt)
     }
 }
+```
+
+#### Library caching
+
+`yfgo.NewClient()` now includes an in-memory cache with a five minute TTL. You can customise or disable it:
+
+```go
+// Disable caching entirely.
+client := yfgo.NewClient(yfgo.WithCacheDisabled())
+
+// Use a 2 minute TTL with a file-backed cache directory.
+store, err := yfgo.NewFileCacheStore("./cache-dir")
+if err != nil {
+    panic(err)
+}
+cachedClient := yfgo.NewClient(
+    yfgo.WithCacheStore(store),
+    yfgo.WithDefaultCacheTTL(2*time.Minute),
+)
+```
+
+Per-call overrides are also available via request options:
+
+```go
+ctx := yfgo.WithCacheOptions(context.Background(), yfgo.CacheTTL(10*time.Second))
+quote, err := client.Quote(ctx, []string{"AAPL"})
 ```
 
 ## Development

@@ -11,9 +11,11 @@ import (
 
 // Client holds HTTP state (cookies/crumb) for Yahoo Finance.
 type Client struct {
-	http  *http.Client
-	crumb string
-	store *clientStore
+	http            *http.Client
+	crumb           string
+	store           *clientStore
+	cache           CacheStore
+	defaultCacheTTL time.Duration
 	// sessionWarmed indicates we've attempted to prime cookies to reduce 401s.
 	sessionWarmed bool
 }
@@ -43,14 +45,77 @@ type API interface {
 	ChartTyped(ctx context.Context, symbol string, opts ChartOptions) (ChartResult, error)
 }
 
-// NewClient creates a Yahoo Finance client with cookie jar and timeout.
-func NewClient() *Client {
+type clientConfig struct {
+	httpClient *http.Client
+	cacheStore CacheStore
+	cacheTTL   time.Duration
+}
+
+// ClientOption configures a client at creation time.
+type ClientOption func(*clientConfig)
+
+// WithHTTPClient allows callers to use a custom http.Client. A cookie jar will
+// be injected if one is not already configured.
+func WithHTTPClient(h *http.Client) ClientOption {
+	return func(cfg *clientConfig) {
+		if h != nil {
+			cfg.httpClient = h
+		}
+	}
+}
+
+// WithCacheStore sets the cache store to use. Passing nil disables caching.
+func WithCacheStore(store CacheStore) ClientOption {
+	return func(cfg *clientConfig) {
+		cfg.cacheStore = store
+	}
+}
+
+// WithDefaultCacheTTL overrides the default cache TTL.
+func WithDefaultCacheTTL(ttl time.Duration) ClientOption {
+	return func(cfg *clientConfig) {
+		cfg.cacheTTL = ttl
+	}
+}
+
+// WithCacheDisabled disables caching regardless of other options.
+func WithCacheDisabled() ClientOption {
+	return func(cfg *clientConfig) {
+		cfg.cacheStore = nil
+		cfg.cacheTTL = 0
+	}
+}
+
+// NewClient creates a Yahoo Finance client with cookie jar, timeout, and optional caching.
+func NewClient(opts ...ClientOption) *Client {
 	jar, _ := cookiejar.New(nil)
-	c := &Client{
-		http: &http.Client{
+	cfg := clientConfig{
+		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 			Jar:     jar,
 		},
+		cacheStore: NewMemoryCacheStore(),
+		cacheTTL:   5 * time.Minute,
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	if cfg.httpClient == nil {
+		cfg.httpClient = &http.Client{
+			Timeout: 15 * time.Second,
+			Jar:     jar,
+		}
+	}
+	if cfg.httpClient.Jar == nil {
+		cfg.httpClient.Jar = jar
+	}
+	if cfg.cacheTTL <= 0 {
+		cfg.cacheStore = nil
+	}
+	c := &Client{
+		http:            cfg.httpClient,
+		cache:           cfg.cacheStore,
+		defaultCacheTTL: cfg.cacheTTL,
 	}
 	c.initStore()
 	return c
@@ -113,6 +178,66 @@ func (c *Client) resetSession() {
 
 // jsonUnmarshal is a tiny wrapper to avoid importing encoding/json in two files.
 func jsonUnmarshal(b []byte, v any) error { return defaultJSON.Unmarshal(b, v) }
+
+func (c *Client) cacheGet(ctx context.Context, key string, opts requestOptions) ([]byte, bool) {
+	if c.cache == nil || opts.bypassCache {
+		return nil, false
+	}
+	entry, ok, err := c.cache.Get(ctx, key)
+	if err != nil || !ok {
+		return nil, false
+	}
+	effectiveTTL := entry.TTL
+	if opts.cacheTTL != nil {
+		if effectiveTTL == 0 || *opts.cacheTTL < effectiveTTL {
+			effectiveTTL = *opts.cacheTTL
+		}
+	}
+	if effectiveTTL > 0 && time.Since(entry.StoredAt) > effectiveTTL {
+		_ = c.cache.Delete(ctx, key)
+		return nil, false
+	}
+	// Return a copy to protect cached value from mutation.
+	cp := append([]byte(nil), entry.Payload...)
+	return cp, true
+}
+
+func (c *Client) cacheSet(ctx context.Context, key string, opts requestOptions, payload []byte) {
+	if c.cache == nil || opts.bypassCache || len(payload) == 0 {
+		return
+	}
+	ttl := c.defaultCacheTTL
+	if opts.cacheTTL != nil {
+		ttl = *opts.cacheTTL
+	}
+	if ttl <= 0 {
+		return
+	}
+	entry := CacheEntry{
+		Payload:  append([]byte(nil), payload...),
+		StoredAt: time.Now().UTC(),
+		TTL:      ttl,
+	}
+	_ = c.cache.Set(ctx, key, entry)
+}
+
+func (c *Client) cacheStoreValue(ctx context.Context, key string, opts requestOptions, value any) {
+	if c.cache == nil || opts.bypassCache {
+		return
+	}
+	payload, err := json.Marshal(value)
+	if err != nil {
+		return
+	}
+	c.cacheSet(ctx, key, opts, payload)
+}
+
+func (c *Client) cacheDelete(ctx context.Context, key string) {
+	if c.cache == nil {
+		return
+	}
+	_ = c.cache.Delete(ctx, key)
+}
 
 // Ensure *Client satisfies API.
 var _ API = (*Client)(nil)

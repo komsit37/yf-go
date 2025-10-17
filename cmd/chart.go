@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -72,7 +71,7 @@ var chartCmd = &cobra.Command{
 		// Argument parsing completed; suppress usage on runtime errors.
 		cmd.SilenceUsage = true
 
-		ctx := context.Background()
+		ctx := requestContext(cmd)
 		format := viper.GetString("format")
 		switch format {
 		case "json":

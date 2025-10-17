@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -26,7 +25,7 @@ var quoteCmd = &cobra.Command{
 
 		// Actual runtime error: suppress usage output.
 		cmd.SilenceUsage = true
-		ctx := context.Background()
+		ctx := requestContext(cmd)
 		quotes, err := yfgo.DefaultAPI.Quote(ctx, symbols)
 		if err != nil {
 			return err

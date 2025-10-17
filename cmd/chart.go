@@ -158,10 +158,7 @@ func parseChartTimestamp(name, raw string) (*int64, error) {
 func renderChartTable(w *os.File, res yfgo.ChartResult) {
 	t := table.NewWriter()
 	t.SetOutputMirror(w)
-	t.SetStyle(table.StyleColoredDark)
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateColumns = false
-	t.Style().Options.SeparateRows = false
+	applyTableStyle(t)
 	t.AppendHeader(table.Row{"Date", "Open", "High", "Low", "Close", "Adj Close", "Volume", "Event"})
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Name: "Open", Align: text.AlignRight},

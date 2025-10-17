@@ -105,10 +105,7 @@ func init() {
 func renderPriceTableMany(w *os.File, results []yfgo.QuoteSummaryTyped, full bool) {
 	t := table.NewWriter()
 	t.SetOutputMirror(w)
-	t.SetStyle(table.StyleColoredDark)
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateRows = false
-	t.Style().Options.SeparateColumns = false
+	applyTableStyle(t)
 
 	hdr := table.Row{"Sym", "Price", "Chg", "Chg%", "Prev", "Mkt Cap"}
 	if full {

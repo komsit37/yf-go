@@ -1,5 +1,8 @@
 # Plan – Yahoo Finance API caching
 
+## Status
+Done
+
 ## Goals
 - Introduce a configurable caching layer that supports both in-memory and file-based stores for Yahoo Finance responses.
 - Allow per-client default TTL as well as per-request overrides, including a force-refresh option.

@@ -16,6 +16,7 @@ type Client struct {
 	store           *clientStore
 	cache           CacheStore
 	defaultCacheTTL time.Duration
+	moduleCacheTTL  map[QuoteSummaryModule]time.Duration
 	// sessionWarmed indicates we've attempted to prime cookies to reduce 401s.
 	sessionWarmed bool
 }
@@ -49,6 +50,7 @@ type clientConfig struct {
 	httpClient *http.Client
 	cacheStore CacheStore
 	cacheTTL   time.Duration
+	moduleTTL  map[QuoteSummaryModule]time.Duration
 }
 
 // ClientOption configures a client at creation time.
@@ -83,6 +85,24 @@ func WithCacheDisabled() ClientOption {
 	return func(cfg *clientConfig) {
 		cfg.cacheStore = nil
 		cfg.cacheTTL = 0
+		cfg.moduleTTL = nil
+	}
+}
+
+// WithQuoteSummaryModuleTTLs configures per-module cache TTL overrides for
+// quoteSummary responses. A TTL <=0 disables caching for the module.
+func WithQuoteSummaryModuleTTLs(ttls map[QuoteSummaryModule]time.Duration) ClientOption {
+	return func(cfg *clientConfig) {
+		if len(ttls) == 0 {
+			cfg.moduleTTL = nil
+			return
+		}
+		if cfg.moduleTTL == nil {
+			cfg.moduleTTL = make(map[QuoteSummaryModule]time.Duration, len(ttls))
+		}
+		for k, v := range ttls {
+			cfg.moduleTTL[k] = v
+		}
 	}
 }
 
@@ -110,12 +130,29 @@ func NewClient(opts ...ClientOption) *Client {
 		cfg.httpClient.Jar = jar
 	}
 	if cfg.cacheTTL <= 0 {
-		cfg.cacheStore = nil
+		hasPositiveModuleTTL := false
+		for _, ttl := range cfg.moduleTTL {
+			if ttl > 0 {
+				hasPositiveModuleTTL = true
+				break
+			}
+		}
+		if !hasPositiveModuleTTL {
+			cfg.cacheStore = nil
+		}
+	}
+	var moduleTTL map[QuoteSummaryModule]time.Duration
+	if len(cfg.moduleTTL) > 0 {
+		moduleTTL = make(map[QuoteSummaryModule]time.Duration, len(cfg.moduleTTL))
+		for k, v := range cfg.moduleTTL {
+			moduleTTL[k] = v
+		}
 	}
 	c := &Client{
 		http:            cfg.httpClient,
 		cache:           cfg.cacheStore,
 		defaultCacheTTL: cfg.cacheTTL,
+		moduleCacheTTL:  moduleTTL,
 	}
 	c.initStore()
 	return c
@@ -202,13 +239,18 @@ func (c *Client) cacheGet(ctx context.Context, key string, opts requestOptions) 
 	return cp, true
 }
 
-func (c *Client) cacheSet(ctx context.Context, key string, opts requestOptions, payload []byte) {
+func (c *Client) cacheSet(ctx context.Context, key string, opts requestOptions, payload []byte, override *time.Duration) {
 	if c.cache == nil || opts.bypassCache || len(payload) == 0 {
 		return
 	}
 	ttl := c.defaultCacheTTL
+	if override != nil {
+		ttl = *override
+	}
 	if opts.cacheTTL != nil {
-		ttl = *opts.cacheTTL
+		if ttl == 0 || *opts.cacheTTL < ttl {
+			ttl = *opts.cacheTTL
+		}
 	}
 	if ttl <= 0 {
 		return
@@ -222,6 +264,10 @@ func (c *Client) cacheSet(ctx context.Context, key string, opts requestOptions, 
 }
 
 func (c *Client) cacheStoreValue(ctx context.Context, key string, opts requestOptions, value any) {
+	c.cacheStoreValueWithTTL(ctx, key, opts, value, nil)
+}
+
+func (c *Client) cacheStoreValueWithTTL(ctx context.Context, key string, opts requestOptions, value any, override *time.Duration) {
 	if c.cache == nil || opts.bypassCache {
 		return
 	}
@@ -229,7 +275,7 @@ func (c *Client) cacheStoreValue(ctx context.Context, key string, opts requestOp
 	if err != nil {
 		return
 	}
-	c.cacheSet(ctx, key, opts, payload)
+	c.cacheSet(ctx, key, opts, payload, override)
 }
 
 func (c *Client) cacheDelete(ctx context.Context, key string) {

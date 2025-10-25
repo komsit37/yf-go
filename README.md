@@ -35,6 +35,17 @@ The CLI caches Yahoo Finance responses by default for five minutes, writing entr
 - `--force-refresh` / `YF_FORCE_REFRESH` — bypass the cache read but refresh the stored value.
 - `--no-cache` / `YF_NO_CACHE` — bypass reads and writes entirely for the invocation.
 
+Quote summary modules are cached individually. Configure module-specific TTLs via your config file:
+
+```yaml
+cache:
+  module-ttls:
+    price: 30s
+    assetProfile: 6h
+```
+
+Set a module TTL to `0` (or a negative duration) to disable caching for that module. The same behaviour is available from code with `yfgo.WithQuoteSummaryModuleTTLs`.
+
 ### 2. Library: import `github.com/komsit37/yf-go` (package `yfgo`) in your Go code.
 
 Example (library):
@@ -96,6 +107,10 @@ if err != nil {
 cachedClient := yfgo.NewClient(
     yfgo.WithCacheStore(store),
     yfgo.WithDefaultCacheTTL(2*time.Minute),
+    yfgo.WithQuoteSummaryModuleTTLs(map[yfgo.QuoteSummaryModule]time.Duration{
+        yfgo.ModulePrice:        30 * time.Second,
+        yfgo.ModuleAssetProfile: 6 * time.Hour,
+    }),
 )
 ```
 

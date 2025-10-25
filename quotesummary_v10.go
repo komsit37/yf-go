@@ -60,21 +60,66 @@ func (c *Client) ensureCrumb(ctx context.Context) error {
 // QuoteSummary calls the Yahoo Finance quoteSummary endpoint.
 func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []QuoteSummaryModule) (any, error) {
 	reqOpts := requestOptionsFromContext(ctx)
-	key := cacheKeyQuoteSummary(symbol, modules)
+	if len(modules) == 0 {
+		fetched, err := c.fetchQuoteSummary(ctx, symbol, nil)
+		if err != nil {
+			return nil, err
+		}
+		c.storeQuoteSummaryModules(ctx, symbol, fetched, reqOpts, nil)
+		return fetched, nil
+	}
+
+	requested := dedupeQuoteSummaryModules(modules)
+	moduleData := make(map[string]any, len(requested))
+	var missing []QuoteSummaryModule
+
 	if !reqOpts.forceRefresh {
-		if payload, ok := c.cacheGet(ctx, key, reqOpts); ok {
-			var cached any
-			if err := jsonUnmarshal(payload, &cached); err == nil {
-				return cached, nil
+		for _, mod := range requested {
+			if value, ok := c.loadQuoteSummaryModule(ctx, symbol, mod, reqOpts); ok {
+				moduleData[mod.String()] = value
+				continue
 			}
-			c.cacheDelete(ctx, key)
+			missing = append(missing, mod)
+		}
+	} else {
+		missing = append(missing, requested...)
+	}
+
+	var fetched map[string]any
+	if len(missing) > 0 {
+		var err error
+		fetched, err = c.fetchQuoteSummary(ctx, symbol, missing)
+		if err != nil {
+			return nil, err
+		}
+		for name, value := range fetched {
+			moduleData[name] = value
+		}
+		c.storeQuoteSummaryModules(ctx, symbol, fetched, reqOpts, nil)
+	}
+
+	result := make(map[string]any, len(moduleData))
+	for _, mod := range requested {
+		name := mod.String()
+		if val, ok := moduleData[name]; ok {
+			result[name] = val
+		}
+	}
+	if fetched != nil {
+		for name, value := range fetched {
+			if _, exists := result[name]; !exists {
+				result[name] = value
+			}
 		}
 	}
 
+	return result, nil
+}
+
+func (c *Client) fetchQuoteSummary(ctx context.Context, symbol string, modules []QuoteSummaryModule) (map[string]any, error) {
 	if err := c.ensureCrumb(ctx); err != nil {
 		return nil, err
 	}
-	// Build URL with crumb
 	base := fmt.Sprintf("https://query1.finance.yahoo.com/v10/finance/quoteSummary/%s", url.PathEscape(symbol))
 	q := url.Values{}
 	if len(modules) > 0 {
@@ -83,13 +128,10 @@ func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []Quot
 	q.Set("crumb", c.crumb)
 	u := base + "?" + q.Encode()
 
-	// First attempt
 	result, status, body, err := c.callQuoteSummary(ctx, u)
 	if err == nil {
-		c.cacheStoreValue(ctx, key, reqOpts, result)
 		return result, nil
 	}
-	// If unauthorized/invalid crumb, refresh once and retry
 	if status == http.StatusUnauthorized || strings.Contains(strings.ToLower(body), "invalid crumb") {
 		c.crumb = ""
 		if err2 := c.ensureCrumb(ctx); err2 != nil {
@@ -101,13 +143,12 @@ func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []Quot
 		if err != nil {
 			return nil, err
 		}
-		c.cacheStoreValue(ctx, key, reqOpts, result)
 		return result, nil
 	}
 	return nil, err
 }
 
-func (c *Client) callQuoteSummary(ctx context.Context, u string) (any, int, string, error) {
+func (c *Client) callQuoteSummary(ctx context.Context, u string) (map[string]any, int, string, error) {
 	resp, err := c.do(ctx, http.MethodGet, u)
 	if err != nil {
 		return nil, 0, "", err
@@ -127,7 +168,83 @@ func (c *Client) callQuoteSummary(ctx context.Context, u string) (any, int, stri
 	if len(env.QuoteSummary.Result) == 0 {
 		return nil, resp.StatusCode, string(b), errors.New("no results returned")
 	}
-	return env.QuoteSummary.Result[0], resp.StatusCode, string(b), nil
+	if root, ok := env.QuoteSummary.Result[0].(map[string]any); ok {
+		return root, resp.StatusCode, string(b), nil
+	}
+	// Fall back to marshaling to a generic map if the decoder gave a different type.
+	raw, err := json.Marshal(env.QuoteSummary.Result[0])
+	if err != nil {
+		return nil, resp.StatusCode, string(b), fmt.Errorf("unexpected quoteSummary payload: %w", err)
+	}
+	var out map[string]any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, resp.StatusCode, string(b), fmt.Errorf("unexpected quoteSummary payload: %w", err)
+	}
+	return out, resp.StatusCode, string(b), nil
+}
+
+func (c *Client) loadQuoteSummaryModule(ctx context.Context, symbol string, module QuoteSummaryModule, opts requestOptions) (any, bool) {
+	if ttl, ok := c.moduleCacheTTL[module]; ok && ttl <= 0 {
+		c.cacheDelete(ctx, cacheKeyQuoteSummaryModule(symbol, module))
+		return nil, false
+	}
+	key := cacheKeyQuoteSummaryModule(symbol, module)
+	if payload, ok := c.cacheGet(ctx, key, opts); ok {
+		var cached any
+		if err := jsonUnmarshal(payload, &cached); err == nil {
+			return cached, true
+		}
+		c.cacheDelete(ctx, key)
+	}
+	return nil, false
+}
+
+func (c *Client) storeQuoteSummaryModules(ctx context.Context, symbol string, fetched map[string]any, opts requestOptions, allow map[string]struct{}) {
+	if len(fetched) == 0 {
+		return
+	}
+	for name, value := range fetched {
+		if len(allow) > 0 {
+			if _, ok := allow[name]; !ok {
+				continue
+			}
+		}
+		mod, ok := ParseQuoteSummaryModule(name)
+		if !ok {
+			continue
+		}
+		c.storeQuoteSummaryModule(ctx, symbol, mod, value, opts)
+	}
+}
+
+func (c *Client) storeQuoteSummaryModule(ctx context.Context, symbol string, module QuoteSummaryModule, value any, opts requestOptions) {
+	key := cacheKeyQuoteSummaryModule(symbol, module)
+	if ttl, ok := c.moduleCacheTTL[module]; ok {
+		if ttl <= 0 {
+			c.cacheDelete(ctx, key)
+			return
+		}
+		ttlCopy := ttl
+		c.cacheStoreValueWithTTL(ctx, key, opts, value, &ttlCopy)
+		return
+	}
+	c.cacheStoreValue(ctx, key, opts, value)
+}
+
+func dedupeQuoteSummaryModules(mods []QuoteSummaryModule) []QuoteSummaryModule {
+	if len(mods) <= 1 {
+		return append([]QuoteSummaryModule(nil), mods...)
+	}
+	seen := make(map[QuoteSummaryModule]struct{}, len(mods))
+	out := make([]QuoteSummaryModule, 0, len(mods))
+	for _, m := range mods {
+		if _, ok := seen[m]; ok {
+			continue
+		}
+		seen[m] = struct{}{}
+		out = append(out, m)
+	}
+	return out
 }
 
 // QuoteSummaryTyped implements API.QuoteSummaryTyped using this client instance.

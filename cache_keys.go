@@ -7,10 +7,8 @@ import (
 	"strings"
 )
 
-func cacheKeyQuoteSummary(symbol string, modules []QuoteSummaryModule) string {
-	mods := ModulesToStrings(modules)
-	sort.Strings(mods)
-	return fmt.Sprintf("quotesummary:%s:%s", strings.ToUpper(symbol), strings.Join(mods, ","))
+func cacheKeyQuoteSummaryModule(symbol string, module QuoteSummaryModule) string {
+	return fmt.Sprintf("quotesummary-module:%s:%s", strings.ToUpper(symbol), module.String())
 }
 
 func cacheKeyQuote(symbols []string) string {

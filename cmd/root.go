@@ -72,11 +72,16 @@ func init() {
 }
 
 func configureClient() error {
+	moduleTTLs, err := moduleCacheTTLsFromConfig()
+	if err != nil {
+		return err
+	}
 	ttl := viper.GetDuration("cache-ttl")
 	noCache := viper.GetBool("no-cache")
-	opts := make([]yfgo.ClientOption, 0, 3)
+	wantCache := !noCache && (ttl > 0 || hasPositiveModuleTTL(moduleTTLs))
+	opts := make([]yfgo.ClientOption, 0, 4)
 
-	if !noCache && ttl > 0 {
+	if wantCache {
 		opts = append(opts, yfgo.WithDefaultCacheTTL(ttl))
 		dir := strings.TrimSpace(viper.GetString("cache-dir"))
 		if dir == "" {
@@ -91,6 +96,9 @@ func configureClient() error {
 			return err
 		}
 		opts = append(opts, yfgo.WithCacheStore(store))
+		if len(moduleTTLs) > 0 {
+			opts = append(opts, yfgo.WithQuoteSummaryModuleTTLs(moduleTTLs))
+		}
 	} else {
 		opts = append(opts, yfgo.WithCacheDisabled())
 	}
@@ -113,4 +121,76 @@ func defaultCacheDir() (string, error) {
 		return "", fmt.Errorf("user home directory not found")
 	}
 	return filepath.Join(userHome, ".yf", "cache"), nil
+}
+
+func moduleCacheTTLsFromConfig() (map[yfgo.QuoteSummaryModule]time.Duration, error) {
+	raw := viper.GetStringMap("cache.module-ttls")
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	out := make(map[yfgo.QuoteSummaryModule]time.Duration, len(raw))
+	for key, val := range raw {
+		mod, ok := yfgo.ParseQuoteSummaryModule(key)
+		if !ok {
+			return nil, fmt.Errorf("cache.module-ttls: unknown module %q", key)
+		}
+		ttl, err := parseDurationValue(val)
+		if err != nil {
+			return nil, fmt.Errorf("cache.module-ttls.%s: %w", mod.String(), err)
+		}
+		out[mod] = ttl
+	}
+	return out, nil
+}
+
+func hasPositiveModuleTTL(ttls map[yfgo.QuoteSummaryModule]time.Duration) bool {
+	for _, ttl := range ttls {
+		if ttl > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func parseDurationValue(raw any) (time.Duration, error) {
+	switch v := raw.(type) {
+	case string:
+		s := strings.TrimSpace(v)
+		if s == "" {
+			return 0, nil
+		}
+		d, err := time.ParseDuration(s)
+		if err != nil {
+			return 0, fmt.Errorf("invalid duration %q: %w", s, err)
+		}
+		return d, nil
+	case fmt.Stringer:
+		return parseDurationValue(v.String())
+	case int:
+		return time.Duration(v) * time.Second, nil
+	case int8:
+		return time.Duration(v) * time.Second, nil
+	case int16:
+		return time.Duration(v) * time.Second, nil
+	case int32:
+		return time.Duration(v) * time.Second, nil
+	case int64:
+		return time.Duration(v) * time.Second, nil
+	case uint:
+		return time.Duration(v) * time.Second, nil
+	case uint8:
+		return time.Duration(v) * time.Second, nil
+	case uint16:
+		return time.Duration(v) * time.Second, nil
+	case uint32:
+		return time.Duration(v) * time.Second, nil
+	case uint64:
+		return time.Duration(v) * time.Second, nil
+	case float32:
+		return time.Duration(float64(time.Second) * float64(v)), nil
+	case float64:
+		return time.Duration(float64(time.Second) * v), nil
+	default:
+		return 0, fmt.Errorf("unsupported duration type %T", raw)
+	}
 }

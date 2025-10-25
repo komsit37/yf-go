@@ -187,6 +187,129 @@ func TestFileCacheStore(t *testing.T) {
 	}
 }
 
+func TestQuoteSummaryModuleCaching(t *testing.T) {
+	hits := int32(0)
+	var requested []string
+	srv := newQuoteSummaryServer(t, &hits, &requested)
+	client := newTestClient(t, srv, 5*time.Minute)
+
+	res1Raw, err := client.QuoteSummary(context.Background(), "AAPL", []QuoteSummaryModule{ModuleAssetProfile, ModulePrice})
+	if err != nil {
+		t.Fatalf("QuoteSummary() first call error: %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 1 {
+		t.Fatalf("expected 1 request, got %d", got)
+	}
+	root1, ok := res1Raw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected map result, got %T", res1Raw)
+	}
+	if val := moduleValue(root1, "assetProfile"); val != "assetProfile-1" {
+		t.Fatalf("unexpected assetProfile value %q", val)
+	}
+	if val := moduleValue(root1, "price"); val != "price-1" {
+		t.Fatalf("unexpected price value %q", val)
+	}
+
+	// Price should hit the cache without triggering the upstream server again.
+	res2Raw, err := client.QuoteSummary(context.Background(), "AAPL", []QuoteSummaryModule{ModulePrice})
+	if err != nil {
+		t.Fatalf("QuoteSummary() cached price error: %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 1 {
+		t.Fatalf("expected cache hit without new requests, got %d", got)
+	}
+	root2, ok := res2Raw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected map result, got %T", res2Raw)
+	}
+	if val := moduleValue(root2, "price"); val != "price-1" {
+		t.Fatalf("expected cached price-1, got %q", val)
+	}
+
+	// Request a cached module plus a new one; only the new module should trigger a request.
+	res3Raw, err := client.QuoteSummary(context.Background(), "AAPL", []QuoteSummaryModule{ModuleAssetProfile, ModuleBalanceSheetHistory})
+	if err != nil {
+		t.Fatalf("QuoteSummary() mixed modules error: %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 2 {
+		t.Fatalf("expected exactly one additional request, got %d", got)
+	}
+	if len(requested) != 2 {
+		t.Fatalf("expected 2 upstream requests recorded, got %d", len(requested))
+	}
+	if requested[1] != "balanceSheetHistory" {
+		t.Fatalf("expected second request for balanceSheetHistory, got %q", requested[1])
+	}
+	root3, ok := res3Raw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected map result, got %T", res3Raw)
+	}
+	if val := moduleValue(root3, "assetProfile"); val != "assetProfile-1" {
+		t.Fatalf("expected cached assetProfile-1, got %q", val)
+	}
+	if val := moduleValue(root3, "balanceSheetHistory"); val != "balanceSheetHistory-2" {
+		t.Fatalf("expected fetched balanceSheetHistory-2, got %q", val)
+	}
+}
+
+func TestQuoteSummaryModuleTTLOverrides(t *testing.T) {
+	hits := int32(0)
+	var requested []string
+	srv := newQuoteSummaryServer(t, &hits, &requested)
+	client := newTestClient(
+		t,
+		srv,
+		5*time.Minute,
+		WithQuoteSummaryModuleTTLs(map[QuoteSummaryModule]time.Duration{
+			ModulePrice:        20 * time.Millisecond,
+			ModuleAssetProfile: time.Minute,
+		}),
+	)
+
+	modules := []QuoteSummaryModule{ModulePrice, ModuleAssetProfile}
+	res1Raw, err := client.QuoteSummary(context.Background(), "AAPL", modules)
+	if err != nil {
+		t.Fatalf("QuoteSummary() first call error: %v", err)
+	}
+	root1, ok := res1Raw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected map result, got %T", res1Raw)
+	}
+	if val := moduleValue(root1, "price"); val != "price-1" {
+		t.Fatalf("unexpected price value %q", val)
+	}
+	if val := moduleValue(root1, "assetProfile"); val != "assetProfile-1" {
+		t.Fatalf("unexpected assetProfile value %q", val)
+	}
+
+	time.Sleep(30 * time.Millisecond)
+
+	res2Raw, err := client.QuoteSummary(context.Background(), "AAPL", modules)
+	if err != nil {
+		t.Fatalf("QuoteSummary() second call error: %v", err)
+	}
+	if got := atomic.LoadInt32(&hits); got != 2 {
+		t.Fatalf("expected second request after price TTL expired, got %d", got)
+	}
+	if len(requested) != 2 {
+		t.Fatalf("expected 2 upstream requests recorded, got %d", len(requested))
+	}
+	if requested[1] != "price" {
+		t.Fatalf("expected second request only for price, got %q", requested[1])
+	}
+	root2, ok := res2Raw.(map[string]any)
+	if !ok {
+		t.Fatalf("expected map result, got %T", res2Raw)
+	}
+	if val := moduleValue(root2, "price"); val != "price-2" {
+		t.Fatalf("expected refreshed price-2, got %q", val)
+	}
+	if val := moduleValue(root2, "assetProfile"); val != "assetProfile-1" {
+		t.Fatalf("expected cached assetProfile-1, got %q", val)
+	}
+}
+
 func newQuoteServer(t *testing.T, hits *int32) *httptest.Server {
 	t.Helper()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -213,14 +336,61 @@ func newQuoteServer(t *testing.T, hits *int32) *httptest.Server {
 	return srv
 }
 
-func newTestClient(t *testing.T, srv *httptest.Server, ttl time.Duration) *Client {
+func newQuoteSummaryServer(t *testing.T, hits *int32, requested *[]string) *httptest.Server {
+	t.Helper()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || !strings.Contains(r.URL.Path, "/v10/finance/quoteSummary/") {
+			http.NotFound(w, r)
+			return
+		}
+		modulesParam := r.URL.Query().Get("modules")
+		if requested != nil {
+			*requested = append(*requested, modulesParam)
+		}
+		n := atomic.AddInt32(hits, 1)
+		var mods []string
+		if modulesParam != "" {
+			for _, item := range strings.Split(modulesParam, ",") {
+				item = strings.TrimSpace(item)
+				if item != "" {
+					mods = append(mods, item)
+				}
+			}
+		}
+		if len(mods) == 0 {
+			mods = []string{"price"}
+		}
+		payload := make(map[string]any, len(mods))
+		for _, m := range mods {
+			payload[m] = map[string]any{
+				"value": fmt.Sprintf("%s-%d", m, n),
+			}
+		}
+		resp := map[string]any{
+			"quoteSummary": map[string]any{
+				"result": []map[string]any{payload},
+				"error":  nil,
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func newTestClient(t *testing.T, srv *httptest.Server, ttl time.Duration, extra ...ClientOption) *Client {
 	t.Helper()
 	target, err := url.Parse(srv.URL)
 	if err != nil {
 		t.Fatalf("parse server URL: %v", err)
 	}
 	base := srv.Client()
-	client := NewClient(WithDefaultCacheTTL(ttl))
+	opts := make([]ClientOption, 0, 1+len(extra))
+	opts = append(opts, WithDefaultCacheTTL(ttl))
+	opts = append(opts, extra...)
+	client := NewClient(opts...)
 	client.http = &http.Client{
 		Timeout:   5 * time.Second,
 		Transport: rewriteRoundTripper{target: target, next: base.Transport},
@@ -229,6 +399,15 @@ func newTestClient(t *testing.T, srv *httptest.Server, ttl time.Duration) *Clien
 	client.crumb = "crumb"
 	client.store = nil
 	return client
+}
+
+func moduleValue(root map[string]any, key string) string {
+	mod, ok := root[key].(map[string]any)
+	if !ok {
+		return ""
+	}
+	val, _ := mod["value"].(string)
+	return val
 }
 
 type rewriteRoundTripper struct {

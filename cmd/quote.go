@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -15,7 +16,7 @@ import (
 var quoteCmd = &cobra.Command{
 	Use:     "quote <symbol...>",
 	Aliases: []string{"q"},
-	Short:   "Get quotes via v7/finance/quote (raw JSON by default)",
+	Short:   "Get quotes via v7/finance/quote (raw JSON output)",
 	Args:    cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		symbols := parseSymbols(args)
@@ -38,7 +39,7 @@ var quoteCmd = &cobra.Command{
 			return nil
 		case "table":
 			// For now, only raw JSON is supported; suggest using `price` for tables.
-			return fmt.Errorf("table output not supported for 'quote'; use 'price' or set -o json")
+			return fmt.Errorf("table output not supported for 'quote'; use 'price' or set -f json")
 		default:
 			return fmt.Errorf("unsupported format: %s", viper.GetString("format"))
 		}
@@ -47,5 +48,12 @@ var quoteCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(quoteCmd)
-	// Default format remains JSON (inherited from root), matching v7 raw output intent.
+
+	// Default quote output is JSON unless overridden via CLI flag, env (YF_FORMAT),
+	// or config file.
+	quoteCmd.PreRun = func(cmd *cobra.Command, args []string) {
+		if !cmd.Flags().Changed("format") && os.Getenv("YF_FORMAT") == "" && !viper.InConfig("format") {
+			viper.Set("format", "json")
+		}
+	}
 }

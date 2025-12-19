@@ -129,8 +129,8 @@ In this project, these steps are handled automatically by `yfgo.Client`.
 
 ## CLI Examples
 
-- JSON (pretty): `./yf qs AAPL -o json --pretty`
-- Table: `./yf qs AAPL -o table`
+- JSON (pretty): `./yf qs AAPL -f json --pretty`
+- Table: `./yf qs AAPL -f table`
 - List supported modules: `./yf qs --list-modules`
 
 ## Security & Terms

@@ -24,7 +24,7 @@ func Execute() error { return rootCmd.Execute() }
 
 func init() {
 	// Global flags
-	rootCmd.PersistentFlags().StringP("format", "o", "json", "Output format (json|table)")
+	rootCmd.PersistentFlags().StringP("format", "f", "table", "Output format (json|table)")
 	rootCmd.PersistentFlags().Bool("pretty", false, "Pretty print output")
 	rootCmd.PersistentFlags().String("color", "auto", "Color output (auto|always|never)")
 

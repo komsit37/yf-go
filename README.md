@@ -18,11 +18,11 @@ Small Yahoo Finance tool for Go with two uses:
 - Price (table): `./yf price AAPL,TSLA,NVDA,GOOGL,META,MSFT`
 ![Price table screenshot showing multiple symbols](refs/screenshot.png)
 
-- Quote summary (JSON pretty): `./yf qs AAPL -o json --pretty`
-- Quote summary (table) with modules: `./yf qs AAPL -m assetProfile -o table`
+- Quote summary (JSON pretty): `./yf qs AAPL -f json --pretty`
+- Quote summary (table) with modules: `./yf qs AAPL -m assetProfile -f table`
 - List supported [modules](quotesummary_modules.go): `./yf qs --list-modules`
 - Chart data (JSON pretty): `./yf chart AAPL --range 5d --interval 1h --pretty`
-- Chart data (table): `./yf chart AAPL --range 1mo --interval 1d -o table`
+- Chart data (table): `./yf chart AAPL --range 1mo --interval 1d -f table`
 
 For typed access in Go code you can use `ChartTyped` for normalized time-series data.
 

@@ -27,3 +27,4 @@ vendor/
 *.log
 
 .gocache/
+.gomodcache/

@@ -82,13 +82,17 @@ var chartCmd = &cobra.Command{
 			}
 			return printJSON(data, viper.GetBool("pretty"))
 		case "table":
+			cols, err := parseChartColumns(viper.GetString("chart-columns"))
+			if err != nil {
+				return err
+			}
 			optsTable := opts
 			optsTable.ReturnType = "object"
 			typed, err := yfgo.DefaultAPI.ChartTyped(ctx, symbol, optsTable)
 			if err != nil {
 				return err
 			}
-			renderChartTable(os.Stdout, typed)
+			renderChartTable(os.Stdout, typed, cols)
 			return nil
 		default:
 			return fmt.Errorf("unsupported format: %s", format)
@@ -99,10 +103,10 @@ var chartCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(chartCmd)
 
-	chartCmd.Flags().String("interval", "1d", "Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)")
+	chartCmd.Flags().String("interval", "1mo", "Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)")
 	_ = viper.BindPFlag("chart-interval", chartCmd.Flags().Lookup("interval"))
 
-	chartCmd.Flags().String("range", "1mo", "Date range (e.g. 1d, 5d, 1mo, 3mo, 6mo, 1y, 5y, ytd, max). Use period flags for a custom window.")
+	chartCmd.Flags().String("range", "1y", "Date range (e.g. 1d, 5d, 1mo, 3mo, 6mo, 1y, 5y, ytd, max). Use period flags for a custom window.")
 	_ = viper.BindPFlag("chart-range", chartCmd.Flags().Lookup("range"))
 
 	chartCmd.Flags().String("period1", "", "Custom range start (unix seconds or date: YYYY-MM-DD, RFC3339).")
@@ -125,6 +129,9 @@ func init() {
 
 	chartCmd.Flags().String("return", "array", "Return style (array|object)")
 	_ = viper.BindPFlag("chart-return", chartCmd.Flags().Lookup("return"))
+
+	chartCmd.Flags().StringP("columns", "c", "c", "Table columns (letters; date is always shown): o=open,h=high,l=low,c=close,a=adj close,v=volume,e=event")
+	_ = viper.BindPFlag("chart-columns", chartCmd.Flags().Lookup("columns"))
 }
 
 func parseChartTimestamp(name, raw string) (*int64, error) {
@@ -155,19 +162,103 @@ func parseChartTimestamp(name, raw string) (*int64, error) {
 	return nil, fmt.Errorf("invalid %s: %q (expected unix seconds or parsable date)", name, raw)
 }
 
-func renderChartTable(w *os.File, res yfgo.ChartResult) {
+type chartColumn int
+
+const (
+	chartColOpen chartColumn = iota
+	chartColHigh
+	chartColLow
+	chartColClose
+	chartColAdjClose
+	chartColVolume
+	chartColEvent
+)
+
+type chartColumns struct {
+	order []chartColumn
+}
+
+func parseChartColumns(raw string) (chartColumns, error) {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if raw == "" {
+		raw = "ohlcvae"
+	}
+
+	out := chartColumns{order: make([]chartColumn, 0, len(raw))}
+	seen := map[chartColumn]bool{}
+
+	for _, r := range raw {
+		var col chartColumn
+		switch r {
+		case 'o':
+			col = chartColOpen
+		case 'h':
+			col = chartColHigh
+		case 'l':
+			col = chartColLow
+		case 'c':
+			col = chartColClose
+		case 'a':
+			col = chartColAdjClose
+		case 'v':
+			col = chartColVolume
+		case 'e':
+			col = chartColEvent
+		default:
+			return chartColumns{}, fmt.Errorf("invalid --columns %q: unknown letter %q (allowed: ohlcvae)", raw, string(r))
+		}
+		if seen[col] {
+			continue
+		}
+		seen[col] = true
+		out.order = append(out.order, col)
+	}
+
+	if len(out.order) == 0 {
+		return chartColumns{}, fmt.Errorf("invalid --columns %q: no columns selected (allowed: ohlcvae)", raw)
+	}
+	return out, nil
+}
+
+func renderChartTable(w *os.File, res yfgo.ChartResult, cols chartColumns) {
 	t := table.NewWriter()
 	t.SetOutputMirror(w)
 	applyTableStyle(t)
-	t.AppendHeader(table.Row{"Date", "Open", "High", "Low", "Close", "Adj Close", "Volume", "Event"})
-	t.SetColumnConfigs([]table.ColumnConfig{
-		{Name: "Open", Align: text.AlignRight},
-		{Name: "High", Align: text.AlignRight},
-		{Name: "Low", Align: text.AlignRight},
-		{Name: "Close", Align: text.AlignRight},
-		{Name: "Adj Close", Align: text.AlignRight},
-		{Name: "Volume", Align: text.AlignRight},
-	})
+
+	hdr := make(table.Row, 0, 1+len(cols.order))
+	hdr = append(hdr, "Date")
+
+	configs := []table.ColumnConfig{}
+
+	for _, c := range cols.order {
+		switch c {
+		case chartColOpen:
+			hdr = append(hdr, "Open")
+			configs = append(configs, table.ColumnConfig{Name: "Open", Align: text.AlignRight})
+		case chartColHigh:
+			hdr = append(hdr, "High")
+			configs = append(configs, table.ColumnConfig{Name: "High", Align: text.AlignRight})
+		case chartColLow:
+			hdr = append(hdr, "Low")
+			configs = append(configs, table.ColumnConfig{Name: "Low", Align: text.AlignRight})
+		case chartColClose:
+			hdr = append(hdr, "Close")
+			configs = append(configs, table.ColumnConfig{Name: "Close", Align: text.AlignRight})
+		case chartColAdjClose:
+			hdr = append(hdr, "Adj Close")
+			configs = append(configs, table.ColumnConfig{Name: "Adj Close", Align: text.AlignRight})
+		case chartColVolume:
+			hdr = append(hdr, "Volume")
+			configs = append(configs, table.ColumnConfig{Name: "Volume", Align: text.AlignRight})
+		case chartColEvent:
+			hdr = append(hdr, "Event")
+		}
+	}
+
+	t.AppendHeader(hdr)
+	if len(configs) > 0 {
+		t.SetColumnConfigs(configs)
+	}
 
 	priceHint := 2
 	if res.Meta.PriceHint != nil {
@@ -197,15 +288,25 @@ func renderChartTable(w *os.File, res yfgo.ChartResult) {
 	}
 
 	for idx, ts := range res.Timestamp {
-		row := table.Row{
-			formatChartTimestamp(ts, loc, timeFormat),
-			formatChartFloat(floatAt(quoteSeries.Open, idx), priceHint),
-			formatChartFloat(floatAt(quoteSeries.High, idx), priceHint),
-			formatChartFloat(floatAt(quoteSeries.Low, idx), priceHint),
-			formatChartFloat(floatAt(quoteSeries.Close, idx), priceHint),
-			formatChartFloat(floatAt(adjSeries, idx), priceHint),
-			formatChartVolume(intAt(quoteSeries.Volume, idx)),
-			formatChartEvent(eventMap[ts]),
+		row := make(table.Row, 0, 1+len(cols.order))
+		row = append(row, formatChartTimestamp(ts, loc, timeFormat))
+		for _, c := range cols.order {
+			switch c {
+			case chartColOpen:
+				row = append(row, formatChartFloat(floatAt(quoteSeries.Open, idx), priceHint))
+			case chartColHigh:
+				row = append(row, formatChartFloat(floatAt(quoteSeries.High, idx), priceHint))
+			case chartColLow:
+				row = append(row, formatChartFloat(floatAt(quoteSeries.Low, idx), priceHint))
+			case chartColClose:
+				row = append(row, formatChartFloat(floatAt(quoteSeries.Close, idx), priceHint))
+			case chartColAdjClose:
+				row = append(row, formatChartFloat(floatAt(adjSeries, idx), priceHint))
+			case chartColVolume:
+				row = append(row, formatChartVolume(intAt(quoteSeries.Volume, idx)))
+			case chartColEvent:
+				row = append(row, formatChartEvent(eventMap[ts]))
+			}
 		}
 		t.AppendRow(row)
 	}
@@ -213,15 +314,25 @@ func renderChartTable(w *os.File, res yfgo.ChartResult) {
 	// Fallback to quote slice when timestamps missing (rare, e.g. return=array)
 	if len(res.Timestamp) == 0 && len(res.Quotes) > 0 {
 		for _, q := range res.Quotes {
-			row := table.Row{
-				formatChartTimestamp(q.Date, loc, timeFormat),
-				formatChartFloat(q.Open, priceHint),
-				formatChartFloat(q.High, priceHint),
-				formatChartFloat(q.Low, priceHint),
-				formatChartFloat(q.Close, priceHint),
-				formatChartFloat(q.AdjClose, priceHint),
-				formatChartVolume(q.Volume),
-				formatChartEvent(eventMap[q.Date]),
+			row := make(table.Row, 0, 1+len(cols.order))
+			row = append(row, formatChartTimestamp(q.Date, loc, timeFormat))
+			for _, c := range cols.order {
+				switch c {
+				case chartColOpen:
+					row = append(row, formatChartFloat(q.Open, priceHint))
+				case chartColHigh:
+					row = append(row, formatChartFloat(q.High, priceHint))
+				case chartColLow:
+					row = append(row, formatChartFloat(q.Low, priceHint))
+				case chartColClose:
+					row = append(row, formatChartFloat(q.Close, priceHint))
+				case chartColAdjClose:
+					row = append(row, formatChartFloat(q.AdjClose, priceHint))
+				case chartColVolume:
+					row = append(row, formatChartVolume(q.Volume))
+				case chartColEvent:
+					row = append(row, formatChartEvent(eventMap[q.Date]))
+				}
 			}
 			t.AppendRow(row)
 		}

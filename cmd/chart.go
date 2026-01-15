@@ -31,11 +31,19 @@ var chartCmd = &cobra.Command{
 		}
 		symbol := symbols[0]
 
-		period1, err := parseChartTimestamp("period1", viper.GetString("chart-period1"))
+		period1Raw := viper.GetString("chart-period1")
+		if strings.TrimSpace(period1Raw) == "" {
+			period1Raw = viper.GetString("chart-start")
+		}
+		period1, err := parseChartTimestamp("period1", period1Raw)
 		if err != nil {
 			return err
 		}
-		period2, err := parseChartTimestamp("period2", viper.GetString("chart-period2"))
+		period2Raw := viper.GetString("chart-period2")
+		if strings.TrimSpace(period2Raw) == "" {
+			period2Raw = viper.GetString("chart-end")
+		}
+		period2, err := parseChartTimestamp("period2", period2Raw)
 		if err != nil {
 			return err
 		}
@@ -108,10 +116,10 @@ var chartCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(chartCmd)
 
-	chartCmd.Flags().String("interval", "1mo", "Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)")
+	chartCmd.Flags().StringP("interval", "i", "1mo", "Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)")
 	_ = viper.BindPFlag("chart-interval", chartCmd.Flags().Lookup("interval"))
 
-	chartCmd.Flags().String("range", "1y", "Date range (e.g. 1d, 5d, 1mo, 3mo, 6mo, 1y, 5y, ytd, max). Use period flags for a custom window.")
+	chartCmd.Flags().StringP("range", "r", "1y", "Date range (e.g. 1d, 5d, 1mo, 3mo, 6mo, 1y, 5y, ytd, max). Use period flags for a custom window.")
 	_ = viper.BindPFlag("chart-range", chartCmd.Flags().Lookup("range"))
 
 	chartCmd.Flags().String("period1", "", "Custom range start (unix seconds or date: YYYY-MM-DD, RFC3339).")
@@ -119,6 +127,12 @@ func init() {
 
 	chartCmd.Flags().String("period2", "", "Custom range end (unix seconds or date: YYYY-MM-DD, RFC3339). Defaults to now when omitted.")
 	_ = viper.BindPFlag("chart-period2", chartCmd.Flags().Lookup("period2"))
+
+	chartCmd.Flags().StringP("start", "s", "", "Alias for --period1 (custom range start)")
+	_ = viper.BindPFlag("chart-start", chartCmd.Flags().Lookup("start"))
+
+	chartCmd.Flags().StringP("end", "e", "", "Alias for --period2 (custom range end)")
+	_ = viper.BindPFlag("chart-end", chartCmd.Flags().Lookup("end"))
 
 	chartCmd.Flags().Bool("include-pre-post", true, "Include pre/post market data")
 	_ = viper.BindPFlag("chart-include-pre-post", chartCmd.Flags().Lookup("include-pre-post"))

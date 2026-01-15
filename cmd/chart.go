@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -73,6 +74,10 @@ var chartCmd = &cobra.Command{
 
 		ctx := requestContext(cmd)
 		format := viper.GetString("format")
+		plot := viper.GetBool("chart-plot")
+		if plot && format != "table" {
+			return fmt.Errorf("--plot is only supported with --format table")
+		}
 		switch format {
 		case "json":
 			optsJSON := opts
@@ -92,7 +97,7 @@ var chartCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			renderChartTable(os.Stdout, typed, cols)
+			renderChartTable(os.Stdout, typed, cols, plot)
 			return nil
 		default:
 			return fmt.Errorf("unsupported format: %s", format)
@@ -132,6 +137,9 @@ func init() {
 
 	chartCmd.Flags().StringP("columns", "c", "c", "Table columns (letters; date is always shown): o=open,h=high,l=low,c=close,a=adj close,v=volume,e=event")
 	_ = viper.BindPFlag("chart-columns", chartCmd.Flags().Lookup("columns"))
+
+	chartCmd.Flags().Bool("plot", false, "Plot price series next to the table")
+	_ = viper.BindPFlag("chart-plot", chartCmd.Flags().Lookup("plot"))
 }
 
 func parseChartTimestamp(name, raw string) (*int64, error) {
@@ -220,12 +228,16 @@ func parseChartColumns(raw string) (chartColumns, error) {
 	return out, nil
 }
 
-func renderChartTable(w *os.File, res yfgo.ChartResult, cols chartColumns) {
+func renderChartTable(w *os.File, res yfgo.ChartResult, cols chartColumns, plot bool) {
 	t := table.NewWriter()
 	t.SetOutputMirror(w)
 	applyTableStyle(t)
 
-	hdr := make(table.Row, 0, 1+len(cols.order))
+	extraCols := 2
+	if plot {
+		extraCols++
+	}
+	hdr := make(table.Row, 0, 1+len(cols.order)+extraCols)
 	hdr = append(hdr, "Date")
 
 	configs := []table.ColumnConfig{}
@@ -255,6 +267,17 @@ func renderChartTable(w *os.File, res yfgo.ChartResult, cols chartColumns) {
 		}
 	}
 
+	hdr = append(hdr, "Δ% -1", "Δ% 1st")
+	configs = append(configs,
+		table.ColumnConfig{Name: "Δ% -1", Align: text.AlignRight},
+		table.ColumnConfig{Name: "Δ% 1st", Align: text.AlignRight},
+	)
+
+	if plot {
+		hdr = append(hdr, "Plot")
+		configs = append(configs, table.ColumnConfig{Name: "Plot", Align: text.AlignLeft})
+	}
+
 	t.AppendHeader(hdr)
 	if len(configs) > 0 {
 		t.SetColumnConfigs(configs)
@@ -280,6 +303,13 @@ func renderChartTable(w *os.File, res yfgo.ChartResult, cols chartColumns) {
 		adjSeries = res.Indicators.AdjClose[0].AdjClose
 	}
 
+	closeDecimals := priceHint
+	if max, ok := chartMaxDecimals(quoteSeries.Close); ok {
+		closeDecimals = max
+	} else if max, ok := chartMaxDecimalsQuotes(res.Quotes); ok {
+		closeDecimals = max
+	}
+
 	eventMap := buildChartEvents(res.Events)
 	loc := chartLocation(res.Meta)
 	timeFormat := "2006-01-02"
@@ -287,55 +317,94 @@ func renderChartTable(w *os.File, res yfgo.ChartResult, cols chartColumns) {
 		timeFormat = "2006-01-02 15:04"
 	}
 
+	rows := make([]chartRow, 0, len(res.Timestamp))
 	for idx, ts := range res.Timestamp {
-		row := make(table.Row, 0, 1+len(cols.order))
-		row = append(row, formatChartTimestamp(ts, loc, timeFormat))
+		row := chartRow{
+			date:   formatChartTimestamp(ts, loc, timeFormat),
+			values: make([]interface{}, 0, len(cols.order)),
+		}
 		for _, c := range cols.order {
 			switch c {
 			case chartColOpen:
-				row = append(row, formatChartFloat(floatAt(quoteSeries.Open, idx), priceHint))
+				row.values = append(row.values, formatChartFloat(floatAt(quoteSeries.Open, idx), priceHint))
 			case chartColHigh:
-				row = append(row, formatChartFloat(floatAt(quoteSeries.High, idx), priceHint))
+				row.values = append(row.values, formatChartFloat(floatAt(quoteSeries.High, idx), priceHint))
 			case chartColLow:
-				row = append(row, formatChartFloat(floatAt(quoteSeries.Low, idx), priceHint))
+				row.values = append(row.values, formatChartFloat(floatAt(quoteSeries.Low, idx), priceHint))
 			case chartColClose:
-				row = append(row, formatChartFloat(floatAt(quoteSeries.Close, idx), priceHint))
+				row.values = append(row.values, formatChartClose(floatAt(quoteSeries.Close, idx), closeDecimals))
 			case chartColAdjClose:
-				row = append(row, formatChartFloat(floatAt(adjSeries, idx), priceHint))
+				row.values = append(row.values, formatChartFloat(floatAt(adjSeries, idx), priceHint))
 			case chartColVolume:
-				row = append(row, formatChartVolume(intAt(quoteSeries.Volume, idx)))
+				row.values = append(row.values, formatChartVolume(intAt(quoteSeries.Volume, idx)))
 			case chartColEvent:
-				row = append(row, formatChartEvent(eventMap[ts]))
+				row.values = append(row.values, formatChartEvent(eventMap[ts]))
 			}
 		}
-		t.AppendRow(row)
+		row.plotValue = chartPlotValueSeries(quoteSeries, adjSeries, idx)
+		rows = append(rows, row)
 	}
 
 	// Fallback to quote slice when timestamps missing (rare, e.g. return=array)
 	if len(res.Timestamp) == 0 && len(res.Quotes) > 0 {
 		for _, q := range res.Quotes {
-			row := make(table.Row, 0, 1+len(cols.order))
-			row = append(row, formatChartTimestamp(q.Date, loc, timeFormat))
+			row := chartRow{
+				date:   formatChartTimestamp(q.Date, loc, timeFormat),
+				values: make([]interface{}, 0, len(cols.order)),
+			}
 			for _, c := range cols.order {
 				switch c {
 				case chartColOpen:
-					row = append(row, formatChartFloat(q.Open, priceHint))
+					row.values = append(row.values, formatChartFloat(q.Open, priceHint))
 				case chartColHigh:
-					row = append(row, formatChartFloat(q.High, priceHint))
+					row.values = append(row.values, formatChartFloat(q.High, priceHint))
 				case chartColLow:
-					row = append(row, formatChartFloat(q.Low, priceHint))
+					row.values = append(row.values, formatChartFloat(q.Low, priceHint))
 				case chartColClose:
-					row = append(row, formatChartFloat(q.Close, priceHint))
+					row.values = append(row.values, formatChartClose(q.Close, closeDecimals))
 				case chartColAdjClose:
-					row = append(row, formatChartFloat(q.AdjClose, priceHint))
+					row.values = append(row.values, formatChartFloat(q.AdjClose, priceHint))
 				case chartColVolume:
-					row = append(row, formatChartVolume(q.Volume))
+					row.values = append(row.values, formatChartVolume(q.Volume))
 				case chartColEvent:
-					row = append(row, formatChartEvent(eventMap[q.Date]))
+					row.values = append(row.values, formatChartEvent(eventMap[q.Date]))
 				}
 			}
-			t.AppendRow(row)
+			row.plotValue = chartPlotValueQuote(q)
+			rows = append(rows, row)
 		}
+	}
+
+	var plotMin, plotMax float64
+	plotOK := false
+	if plot {
+		plotMin, plotMax, plotOK = chartPlotRange(rows)
+	}
+	firstPlot := chartFirstPlotValue(rows)
+	var prevPlot *float64
+	for _, row := range rows {
+		out := make(table.Row, 0, 1+len(cols.order)+extraCols)
+		out = append(out, row.date)
+		out = append(out, row.values...)
+		chgPrev := formatChartPctChange(row.plotValue, prevPlot)
+		chgFirst := formatChartPctChange(row.plotValue, firstPlot)
+		out = append(out, chgPrev, chgFirst)
+		if plot {
+			trend := chartPlotTrendNone
+			if row.plotValue != nil && prevPlot != nil {
+				switch {
+				case *row.plotValue > *prevPlot:
+					trend = chartPlotTrendUp
+				case *row.plotValue < *prevPlot:
+					trend = chartPlotTrendDown
+				}
+			}
+			out = append(out, renderChartPlotCell(row.plotValue, plotMin, plotMax, plotOK, trend))
+		}
+		if row.plotValue != nil {
+			prevPlot = row.plotValue
+		}
+		t.AppendRow(out)
 	}
 
 	t.Render()
@@ -380,6 +449,199 @@ func formatChartEvent(events []string) string {
 		return "-"
 	}
 	return strings.Join(events, "; ")
+}
+
+func formatChartClose(val *float64, maxDecimals int) string {
+	if val == nil {
+		return "-"
+	}
+	return formatFloatWithCommasTrim(*val, maxDecimals)
+}
+
+func formatFloatWithCommasTrim(f float64, maxDecimals int) string {
+	if maxDecimals < 0 {
+		maxDecimals = 0
+	}
+	s := formatFloatWithCommas(f, maxDecimals)
+	dot := strings.IndexByte(s, '.')
+	if dot == -1 {
+		return s
+	}
+	trimmed := strings.TrimRight(s[dot+1:], "0")
+	if trimmed == "" {
+		return s[:dot]
+	}
+	return s[:dot+1] + trimmed
+}
+
+type chartRow struct {
+	date      string
+	values    []interface{}
+	plotValue *float64
+}
+
+const chartPlotWidth = 24
+
+type chartPlotTrend int
+
+const (
+	chartPlotTrendNone chartPlotTrend = iota
+	chartPlotTrendUp
+	chartPlotTrendDown
+)
+
+func chartPlotValueSeries(quote yfgo.ChartQuoteSeries, adj []*float64, idx int) *float64 {
+	return firstNonNilFloat(
+		floatAt(quote.Close, idx),
+		floatAt(adj, idx),
+		floatAt(quote.Open, idx),
+		floatAt(quote.High, idx),
+		floatAt(quote.Low, idx),
+	)
+}
+
+func chartPlotValueQuote(q yfgo.ChartQuote) *float64 {
+	return firstNonNilFloat(q.Close, q.AdjClose, q.Open, q.High, q.Low)
+}
+
+func firstNonNilFloat(values ...*float64) *float64 {
+	for _, v := range values {
+		if v != nil {
+			return v
+		}
+	}
+	return nil
+}
+
+func chartPlotRange(rows []chartRow) (float64, float64, bool) {
+	var min, max float64
+	ok := false
+	for _, row := range rows {
+		if row.plotValue == nil {
+			continue
+		}
+		val := *row.plotValue
+		if !ok {
+			min, max = val, val
+			ok = true
+			continue
+		}
+		if val < min {
+			min = val
+		}
+		if val > max {
+			max = val
+		}
+	}
+	return min, max, ok
+}
+
+func chartMaxDecimals(values []*float64) (int, bool) {
+	maxDecimals := 0
+	ok := false
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		decimals := chartDecimalPlaces(*v)
+		if decimals > maxDecimals {
+			maxDecimals = decimals
+		}
+		ok = true
+	}
+	return maxDecimals, ok
+}
+
+func chartMaxDecimalsQuotes(quotes []yfgo.ChartQuote) (int, bool) {
+	maxDecimals := 0
+	ok := false
+	for _, q := range quotes {
+		if q.Close == nil {
+			continue
+		}
+		decimals := chartDecimalPlaces(*q.Close)
+		if decimals > maxDecimals {
+			maxDecimals = decimals
+		}
+		ok = true
+	}
+	return maxDecimals, ok
+}
+
+func chartDecimalPlaces(value float64) int {
+	s := strconv.FormatFloat(value, 'f', -1, 64)
+	if idx := strings.IndexByte(s, '.'); idx >= 0 {
+		return len(s) - idx - 1
+	}
+	return 0
+}
+
+func chartFirstPlotValue(rows []chartRow) *float64 {
+	for _, row := range rows {
+		if row.plotValue != nil {
+			return row.plotValue
+		}
+	}
+	return nil
+}
+
+func formatChartPctChange(current, base *float64) string {
+	if current == nil || base == nil || *base == 0 {
+		return "-"
+	}
+	pct := (*current - *base) / *base * 100
+	if math.Abs(pct) < 0.05 {
+		pct = 0
+	}
+	out := fmt.Sprintf("%+.1f%%", pct)
+	switch {
+	case pct > 0:
+		return text.Colors{text.FgGreen}.Sprint(out)
+	case pct < 0:
+		return text.Colors{text.FgRed}.Sprint(out)
+	default:
+		return out
+	}
+}
+
+func renderChartPlotCell(value *float64, min, max float64, ok bool, trend chartPlotTrend) string {
+	if !ok || value == nil || chartPlotWidth <= 0 {
+		return "-"
+	}
+	pos := chartPlotPosition(*value, min, max, chartPlotWidth)
+	if pos < 0 {
+		return "-"
+	}
+	out := make([]byte, chartPlotWidth)
+	for i := range out {
+		out[i] = ' '
+	}
+	out[pos] = '*'
+	plot := string(out)
+	switch trend {
+	case chartPlotTrendUp:
+		return text.Colors{text.FgGreen}.Sprint(plot)
+	case chartPlotTrendDown:
+		return text.Colors{text.FgRed}.Sprint(plot)
+	default:
+		return plot
+	}
+}
+
+func chartPlotPosition(value, min, max float64, width int) int {
+	if width <= 0 {
+		return -1
+	}
+	if min == max {
+		return width / 2
+	}
+	ratio := (value - min) / (max - min)
+	if ratio < 0 {
+		ratio = 0
+	} else if ratio > 1 {
+		ratio = 1
+	}
+	return int(math.Round(ratio * float64(width-1)))
 }
 
 func floatAt(values []*float64, idx int) *float64 {

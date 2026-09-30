@@ -64,17 +64,25 @@ func RenderChartPNG(result ChartResult, opts RenderOptions) error {
 	if opts.Path == "" || opts.Path == "auto" {
 		return fmt.Errorf("a PNG output path is required")
 	}
+	img, err := renderChartImage(result, opts)
+	if err != nil {
+		return err
+	}
+	return writeChartFile(opts.Path, func(w io.Writer) error { return png.Encode(w, img) })
+}
+
+func renderChartImage(result ChartResult, opts RenderOptions) (*image.RGBA, error) {
 	if chartFontError != nil {
-		return chartFontError
+		return nil, chartFontError
 	}
 	face, err := opentype.NewFace(chartFont, &opentype.FaceOptions{Size: 14, DPI: 72, Hinting: font.HintingFull})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer face.Close()
 	titleFace, err := opentype.NewFace(chartFont, &opentype.FaceOptions{Size: 16, DPI: 72, Hinting: font.HintingFull})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer titleFace.Close()
 
@@ -109,7 +117,7 @@ func RenderChartPNG(result ChartResult, opts RenderOptions) error {
 	previous := result.Meta.ChartPreviousClose
 	if last == nil {
 		label(18, opts.Height/2, "No price data", chartInk, face)
-		return writeChartFile(opts.Path, func(w io.Writer) error { return png.Encode(w, img) })
+		return img, nil
 	}
 	if finiteChartValue(previous) {
 		minimum = math.Min(minimum, *previous)
@@ -195,7 +203,7 @@ func RenderChartPNG(result ChartResult, opts RenderOptions) error {
 		summary += fmt.Sprintf("  %+.2f%%", (*last-*previous) / *previous * 100)
 	}
 	label(opts.Width-18-width(summary), 28, summary, lastColor, face)
-	return writeChartFile(opts.Path, func(w io.Writer) error { return png.Encode(w, img) })
+	return img, nil
 }
 
 func finiteChartValue(value *float64) bool {

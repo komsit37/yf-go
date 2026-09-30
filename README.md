@@ -25,10 +25,14 @@ Small Yahoo Finance tool for Go with two uses:
 - Chart data (table): `./yf chart AAPL --range 1mo --interval 1d -f table`
 - Chart PNG for a preview pane: `./yf chart JP:7203 --range 6mo --interval 1d --width 900 --height 420 --render auto`
 - Chart PNG to a chosen file: `./yf chart US:AAPL --range 5d --interval 1h --render ./aapl.png`
+- Compact security sheet for Raycast: `./yf sheet JP:7203 --range 6mo --interval 1d --width 800 --height 400 --font-size 22 --theme dark --render auto`
+- Current trading session: `./yf sheet JP:7203 --range 1d --interval 1m --include-pre-post=false --theme dark --render auto`
 
 All symbol arguments accept canonical IDs: `JP:7203` becomes `7203.T`, and `US:AAPL` becomes `AAPL`. Prefixes are case insensitive. Yahoo symbols such as `7203.T`, `^N225`, and `BRK-B`, and other prefixes pass through unchanged. This normalization also applies to the Go client and cache keys.
 
 `chart --render <path|auto>` writes a candlestick PNG with volume, price/date axes, exchange-local dates, previous close, and the last close and percentage change. It prints **only the absolute PNG path** to stdout, independently of `--format`. `--width` and `--height` default to 900 and 420 pixels; dimensions must be at least 320 x 200, at most 8192 per side and 32 million pixels total. Existing range, interval, and period flags select the data to render. A bare `--render` requires a value.
+
+`sheet <symbol> --render auto` returns one PNG containing the company title, chart, three aligned financial metric columns, company details, and business summary. It accepts canonical symbols and prints **only the absolute PNG path**. The title and text backgrounds are transparent; the chart retains its white background. `--theme light|dark` chooses readable text colors. `--width` defaults to 800; `--height` defaults to 400 and sizes the chart pane, with the output growing vertically to fit the text. `--font-size` defaults to 22 PNG pixels (11px when displayed at half width), and `--title` can override the company name. Range, interval, and period flags select chart data. Financial amounts use currency symbols and K/M/B/T units, multiples use ×, and growth uses signed percentages. Fundamentals use their reporting currency when it differs from the trading currency. Sheet text is rendered into the image rather than selectable Markdown.
 
 For typed access in Go code you can use `ChartTyped` for normalized time-series data.
 
@@ -42,6 +46,8 @@ The CLI caches Yahoo Finance responses by default for five minutes, writing entr
 - `--no-cache` / `YF_NO_CACHE` — bypass reads and writes entirely for the invocation.
 
 Rendered PNGs are cached in `<cache-dir>/render/` by normalized symbol, chart query, dimensions, and renderer version. `--render auto` returns the cached file path; a chosen output path receives an atomic copy. Render expiry follows the source chart data's TTL and fetch time. `--force-refresh` refreshes both data and PNG. With `--no-cache` or a nonpositive TTL, `--render auto` returns a fresh temporary PNG; callers should remove that file after use.
+
+Sheets reuse the same chart data and quote-summary module cache entries as `chart` and `qs`. Their render keys also include font size, theme, title, and sheet renderer version. A sheet remains cached only while all its sources are fresh, and refreshing any source invalidates it. The existing per-module TTL settings, `--cache-ttl`, `--force-refresh`, and `--no-cache` also apply to sheets. The PNG includes the company website in an uncompressed UTF-8 `iTXt` chunk with keyword `CompanyURL`, so a preview can add a clickable link without another request. Stdout remains a single PNG path. No additional renderer dependencies are needed.
 
 Quote summary modules are cached individually. Configure module-specific TTLs via your config file:
 

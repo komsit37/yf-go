@@ -26,7 +26,7 @@ test:
 
 golden:
 	mkdir -p .gocache .gomodcache
-	GOCACHE=$(CURDIR)/.gocache GOMODCACHE=$(CURDIR)/.gomodcache go test . -run TestRenderChartPNGGolden -args -update
+	GOCACHE=$(CURDIR)/.gocache GOMODCACHE=$(CURDIR)/.gomodcache go test . -run 'TestRender(Chart|Sheet)PNGGolden' -args -update
 
 tidy:
 	mkdir -p .gocache .gomodcache

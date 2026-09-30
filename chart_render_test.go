@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var updateChartGoldens = flag.Bool("update", false, "Update chart renderer golden PNGs")
+var updateChartGoldens = flag.Bool("update", false, "Update chart and sheet renderer golden PNGs")
 
 func chartFixture() ChartResult {
 	f := func(v float64) *float64 { return &v }

@@ -61,7 +61,7 @@ func init() {
 
 	// Validate format early
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		if cmd != chartCmd || viper.GetString("chart-render") == "" {
+		if cmd != sheetCmd && (cmd != chartCmd || viper.GetString("chart-render") == "") {
 			format := strings.ToLower(viper.GetString("format"))
 			switch format {
 			case "json", "table":

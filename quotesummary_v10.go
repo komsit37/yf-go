@@ -59,6 +59,7 @@ func (c *Client) ensureCrumb(ctx context.Context) error {
 
 // QuoteSummary calls the Yahoo Finance quoteSummary endpoint.
 func (c *Client) QuoteSummary(ctx context.Context, symbol string, modules []QuoteSummaryModule) (any, error) {
+	symbol = NormalizeSymbol(symbol)
 	reqOpts := requestOptionsFromContext(ctx)
 	if len(modules) == 0 {
 		fetched, err := c.fetchQuoteSummary(ctx, symbol, nil)

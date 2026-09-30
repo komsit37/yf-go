@@ -11,12 +11,13 @@ import (
 
 // Client holds HTTP state (cookies/crumb) for Yahoo Finance.
 type Client struct {
-	http            *http.Client
-	crumb           string
-	store           *clientStore
-	cache           CacheStore
-	defaultCacheTTL time.Duration
-	moduleCacheTTL  map[QuoteSummaryModule]time.Duration
+	http               *http.Client
+	crumb              string
+	store              *clientStore
+	cache              CacheStore
+	defaultCacheTTL    time.Duration
+	defaultCacheTTLSet bool
+	moduleCacheTTL     map[QuoteSummaryModule]time.Duration
 	// sessionWarmed indicates we've attempted to prime cookies to reduce 401s.
 	sessionWarmed bool
 }
@@ -47,10 +48,11 @@ type API interface {
 }
 
 type clientConfig struct {
-	httpClient *http.Client
-	cacheStore CacheStore
-	cacheTTL   time.Duration
-	moduleTTL  map[QuoteSummaryModule]time.Duration
+	httpClient  *http.Client
+	cacheStore  CacheStore
+	cacheTTL    time.Duration
+	cacheTTLSet bool
+	moduleTTL   map[QuoteSummaryModule]time.Duration
 }
 
 // ClientOption configures a client at creation time.
@@ -77,6 +79,7 @@ func WithCacheStore(store CacheStore) ClientOption {
 func WithDefaultCacheTTL(ttl time.Duration) ClientOption {
 	return func(cfg *clientConfig) {
 		cfg.cacheTTL = ttl
+		cfg.cacheTTLSet = true
 	}
 }
 
@@ -149,10 +152,11 @@ func NewClient(opts ...ClientOption) *Client {
 		}
 	}
 	c := &Client{
-		http:            cfg.httpClient,
-		cache:           cfg.cacheStore,
-		defaultCacheTTL: cfg.cacheTTL,
-		moduleCacheTTL:  moduleTTL,
+		http:               cfg.httpClient,
+		cache:              cfg.cacheStore,
+		defaultCacheTTL:    cfg.cacheTTL,
+		defaultCacheTTLSet: cfg.cacheTTLSet,
+		moduleCacheTTL:     moduleTTL,
 	}
 	c.initStore()
 	return c
@@ -217,7 +221,7 @@ func (c *Client) resetSession() {
 func jsonUnmarshal(b []byte, v any) error { return defaultJSON.Unmarshal(b, v) }
 
 func (c *Client) cacheGet(ctx context.Context, key string, opts requestOptions) ([]byte, bool) {
-	if c.cache == nil || opts.bypassCache {
+	if c.cache == nil || opts.bypassCache || (opts.cacheTTL != nil && *opts.cacheTTL <= 0) {
 		return nil, false
 	}
 	entry, ok, err := c.cache.Get(ctx, key)

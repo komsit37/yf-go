@@ -1,6 +1,6 @@
 # Simple project helpers for formatting and checks.
 
-.PHONY: fmt fmtcheck imports importscheck vet check build run
+.PHONY: fmt fmtcheck imports importscheck vet test golden tidy check build run
 
 fmt:
 	go fmt ./...
@@ -19,6 +19,18 @@ vet:
 	mkdir -p .gocache
 	mkdir -p .gomodcache
 	GOCACHE=$(CURDIR)/.gocache GOMODCACHE=$(CURDIR)/.gomodcache go vet ./...
+
+test:
+	mkdir -p .gocache .gomodcache
+	GOCACHE=$(CURDIR)/.gocache GOMODCACHE=$(CURDIR)/.gomodcache go test ./... $(TEST_ARGS)
+
+golden:
+	mkdir -p .gocache .gomodcache
+	GOCACHE=$(CURDIR)/.gocache GOMODCACHE=$(CURDIR)/.gomodcache go test . -run TestRenderChartPNGGolden -args -update
+
+tidy:
+	mkdir -p .gocache .gomodcache
+	GOCACHE=$(CURDIR)/.gocache GOMODCACHE=$(CURDIR)/.gomodcache go mod tidy
 
 imports:
 	@command -v goimports >/dev/null 2>&1 || { \

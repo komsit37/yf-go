@@ -8,7 +8,7 @@ import (
 )
 
 func cacheKeyQuoteSummaryModule(symbol string, module QuoteSummaryModule) string {
-	return fmt.Sprintf("quotesummary-module:%s:%s", strings.ToUpper(symbol), module.String())
+	return fmt.Sprintf("quotesummary-module:%s:%s", strings.ToUpper(NormalizeSymbol(symbol)), module.String())
 }
 
 func cacheKeyQuote(symbols []string) string {
@@ -17,7 +17,7 @@ func cacheKeyQuote(symbols []string) string {
 	}
 	copySymbols := append([]string(nil), symbols...)
 	for i := range copySymbols {
-		copySymbols[i] = strings.ToUpper(strings.TrimSpace(copySymbols[i]))
+		copySymbols[i] = strings.ToUpper(NormalizeSymbol(strings.TrimSpace(copySymbols[i])))
 	}
 	sort.Strings(copySymbols)
 	return fmt.Sprintf("quote:%s", strings.Join(copySymbols, ","))
@@ -25,7 +25,7 @@ func cacheKeyQuote(symbols []string) string {
 
 func cacheKeyChart(symbol string, opts ChartOptions) string {
 	query := buildChartQuery(opts)
-	return fmt.Sprintf("chart:%s:%s", strings.ToUpper(symbol), query.Encode())
+	return fmt.Sprintf("chart:%s:%s", strings.ToUpper(NormalizeSymbol(symbol)), query.Encode())
 }
 
 func buildChartQuery(opts ChartOptions) url.Values {

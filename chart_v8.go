@@ -37,10 +37,11 @@ type chartEnvelope struct {
 
 // Chart implements API.Chart using the v8/finance/chart endpoint.
 func (c *Client) Chart(ctx context.Context, symbol string, opts ChartOptions) (any, error) {
+	symbol = NormalizeSymbol(symbol)
 	if symbol == "" {
 		return nil, fmt.Errorf("symbol is required")
 	}
-	reqOpts := requestOptionsFromContext(ctx)
+	reqOpts := c.chartRequestOptions(ctx, opts)
 	key := cacheKeyChart(symbol, opts)
 	if !reqOpts.forceRefresh {
 		if payload, ok := c.cacheGet(ctx, key, reqOpts); ok {
@@ -87,7 +88,7 @@ func (c *Client) Chart(ctx context.Context, symbol string, opts ChartOptions) (a
 						if err != nil {
 							return nil, err
 						}
-						c.cacheStoreValue(ctx, key, reqOpts, result)
+						c.cacheStoreValueWithTTL(ctx, key, reqOpts, result, reqOpts.cacheTTL)
 						return result, nil
 					}
 					return nil, fmt.Errorf("yahoo finance error: %s: %s", resp2.Status, strings.TrimSpace(string(body2)))
@@ -100,7 +101,7 @@ func (c *Client) Chart(ctx context.Context, symbol string, opts ChartOptions) (a
 	if err != nil {
 		return nil, err
 	}
-	c.cacheStoreValue(ctx, key, reqOpts, result)
+	c.cacheStoreValueWithTTL(ctx, key, reqOpts, result, reqOpts.cacheTTL)
 	return result, nil
 }
 

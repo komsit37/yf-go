@@ -26,6 +26,11 @@ func (c *Client) Quote(ctx context.Context, symbols []string) ([]Quote, error) {
 	if len(symbols) == 0 {
 		return nil, fmt.Errorf("no symbols provided")
 	}
+	normalized := make([]string, len(symbols))
+	for i, symbol := range symbols {
+		normalized[i] = NormalizeSymbol(symbol)
+	}
+	symbols = normalized
 	reqOpts := requestOptionsFromContext(ctx)
 	key := cacheKeyQuote(symbols)
 	if !reqOpts.forceRefresh {

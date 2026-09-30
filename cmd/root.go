@@ -33,7 +33,7 @@ func init() {
 	_ = viper.BindPFlag("pretty", rootCmd.PersistentFlags().Lookup("pretty"))
 	_ = viper.BindPFlag("color", rootCmd.PersistentFlags().Lookup("color"))
 
-	rootCmd.PersistentFlags().Duration("cache-ttl", 5*time.Minute, "Cache TTL (set to 0 to disable caching)")
+	rootCmd.PersistentFlags().Duration("cache-ttl", 5*time.Minute, "Override cache TTL (chart defaults: 4h daily+, 1m intraday; 0 disables caching)")
 	_ = viper.BindPFlag("cache-ttl", rootCmd.PersistentFlags().Lookup("cache-ttl"))
 
 	rootCmd.PersistentFlags().String("cache-dir", "", "Directory for on-disk cache (defaults to $YF_HOME/cache)")
@@ -61,11 +61,13 @@ func init() {
 
 	// Validate format early
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		format := strings.ToLower(viper.GetString("format"))
-		switch format {
-		case "json", "table":
-		default:
-			return fmt.Errorf("unsupported format: %s (allowed: json, table)", format)
+		if cmd != chartCmd || viper.GetString("chart-render") == "" {
+			format := strings.ToLower(viper.GetString("format"))
+			switch format {
+			case "json", "table":
+			default:
+				return fmt.Errorf("unsupported format: %s (allowed: json, table)", format)
+			}
 		}
 		return configureClient()
 	}
@@ -82,7 +84,9 @@ func configureClient() error {
 	opts := make([]yfgo.ClientOption, 0, 4)
 
 	if wantCache {
-		opts = append(opts, yfgo.WithDefaultCacheTTL(ttl))
+		if cacheTTLOverridden() {
+			opts = append(opts, yfgo.WithDefaultCacheTTL(ttl))
+		}
 		dir := strings.TrimSpace(viper.GetString("cache-dir"))
 		if dir == "" {
 			var err error
@@ -107,6 +111,10 @@ func configureClient() error {
 	yfgo.Default = client
 	yfgo.DefaultAPI = client
 	return nil
+}
+
+func cacheTTLOverridden() bool {
+	return rootCmd.PersistentFlags().Changed("cache-ttl") || viper.InConfig("cache-ttl") || os.Getenv("YF_CACHE_TTL") != ""
 }
 
 func defaultCacheDir() (string, error) {

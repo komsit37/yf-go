@@ -22,6 +22,9 @@ var chartCmd = &cobra.Command{
 	Short: "Get price chart/time-series data for a symbol",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("render") && strings.TrimSpace(viper.GetString("chart-render")) == "" {
+			return fmt.Errorf("--render requires a PNG path or auto")
+		}
 		symbols := parseSymbols(args)
 		if len(symbols) == 0 {
 			return fmt.Errorf("symbol is required")
@@ -81,6 +84,18 @@ var chartCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 
 		ctx := requestContext(cmd)
+		if path := viper.GetString("chart-render"); path != "" {
+			width, height := viper.GetInt("chart-width"), viper.GetInt("chart-height")
+			if width <= 0 || height <= 0 {
+				return fmt.Errorf("--width and --height must be positive")
+			}
+			path, err := yfgo.Default.ChartPNG(ctx, symbol, opts, yfgo.RenderOptions{Path: path, Width: width, Height: height})
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), path)
+			return err
+		}
 		format := viper.GetString("format")
 		plot := viper.GetBool("chart-plot")
 		if plot && format != "table" {
@@ -115,6 +130,13 @@ var chartCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(chartCmd)
+
+	chartCmd.Flags().String("render", "", "Render PNG to a path, or auto for a cached path (prints only the absolute path)")
+	_ = viper.BindPFlag("chart-render", chartCmd.Flags().Lookup("render"))
+	chartCmd.Flags().Int("width", 900, "PNG width in pixels")
+	_ = viper.BindPFlag("chart-width", chartCmd.Flags().Lookup("width"))
+	chartCmd.Flags().Int("height", 420, "PNG height in pixels")
+	_ = viper.BindPFlag("chart-height", chartCmd.Flags().Lookup("height"))
 
 	chartCmd.Flags().StringP("interval", "i", "1mo", "Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)")
 	_ = viper.BindPFlag("chart-interval", chartCmd.Flags().Lookup("interval"))

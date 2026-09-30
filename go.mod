@@ -6,6 +6,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
+	golang.org/x/image v0.24.0
 )
 
 require (

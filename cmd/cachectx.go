@@ -16,8 +16,8 @@ func requestContext(cmd *cobra.Command) context.Context {
 	if viper.GetBool("no-cache") {
 		opts = append(opts, yfgo.BypassCache())
 	}
-	if ttl := viper.GetDuration("cache-ttl"); ttl > 0 {
-		opts = append(opts, yfgo.CacheTTL(ttl))
+	if cacheTTLOverridden() {
+		opts = append(opts, yfgo.CacheTTL(viper.GetDuration("cache-ttl")))
 	}
 	if viper.GetBool("force-refresh") {
 		opts = append(opts, yfgo.ForceRefresh())
